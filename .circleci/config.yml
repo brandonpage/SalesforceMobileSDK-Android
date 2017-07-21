@@ -31,8 +31,7 @@ jobs:
           - v1-dependencies-
 
       - run: 
-          shell: /bin/sh
-            command: |
+          command: |
             echo Install Script
             ./install.sh
 
