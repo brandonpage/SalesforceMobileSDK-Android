@@ -22,7 +22,6 @@ jobs:
       TERM: dumb
     
     steps:
-      - checkout
 
       # Download and cache dependencies
       - restore_cache:
@@ -31,16 +30,13 @@ jobs:
           # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
 
-      - run: gradle dependencies
+      - run: 
+	  shell: /bin/sh
+	  command: |
+	    echo Install Script
+	    ./install.sh
 
       - save_cache:
           paths:
             - ~/.m2
           key: v1-dependencies-{{ checksum "build.gradle" }}
-        
-      # run tests!
-      - run: gradle test
-
-
-
-
