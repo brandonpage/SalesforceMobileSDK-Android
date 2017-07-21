@@ -31,10 +31,10 @@ jobs:
           - v1-dependencies-
 
       - run: 
-	  shell: /bin/sh
-	  command: |
-	    echo Install Script
-	    ./install.sh
+          shell: /bin/sh
+            command: |
+            echo Install Script
+            ./install.sh
 
       - save_cache:
           paths:
