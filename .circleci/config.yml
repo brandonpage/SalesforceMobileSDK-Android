@@ -31,11 +31,9 @@ jobs:
           - v1-dependencies-
 
       - run: 
-          command: |
-            echo Install Script
-            pwd
-            ls
-            ./install.sh
+      #    command: |
+      #      echo Install Script
+      #      ./install.sh
 
       - save_cache:
           paths:
