@@ -33,6 +33,8 @@ jobs:
       - run: 
           command: |
             echo Install Script
+            pwd
+            ls
             ./install.sh
 
       - save_cache:
