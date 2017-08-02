@@ -1,24 +1,50 @@
-# Java Gradle CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-java/ for more details
-#
-version: 2
+machine:
+  java:
+    version: openjdk8
+  
+  environment:
+    ANDROID_HOME: /usr/local/android-sdk-linux
+
 jobs:
   build:
+    dependencies:
+      pre:
+        - sudo update-alternatives --set java /usr/lib/jvm/jdk1.8.0/bin/java
+        - sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
+        - echo 'export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64' >> ~/.circlerc
+        - echo y | android update sdk --no-ui --all --filter "tools"
+        - echo y | android update sdk --no-ui --all --filter "platform-tools"
+        - echo y | android update sdk --no-ui --all --filter "build-tools"
+        - echo y | android update sdk --no-ui --all --filter "android-25"
+        - echo y | android update sdk --no-ui --all --filter "extra-google-m2repository"
+        - echo y | android update sdk --no-ui --all --filter "extra-google-google_play_services"
+        - echo y | android update sdk --no-ui --all --filter "extra-android-support"
+        - echo y | android update sdk --no-ui --all --filter "extra-android-m2repository"
+   
+      override:
+        - ANDROID_HOME=/user/local/android-sdk-linux ./gradlew dependencies     
+    
     docker:
-      # specify the version you desire here
-      - image: circleci/node:latest
       - image: circleci/openjdk:8-jdk
 
-    working_directory: ~/repo
+    working_directory: ~/Android
 
     environment:
       # Customize the JVM maximum heap limit
       JVM_OPTS: -Xmx3200m
       TERM: dumb
     
+    pre:
+      - emulator -avd circleci-android24 -no-window:
+        background: true
+        parallel: true
+      - circle-android wait-for-boot    
+
     steps:
-      - checkout      
+      - checkout
+      - run:
+          name: install-script
+          command: './install.sh'      
 
       # Download and cache dependencies
       - restore_cache:
@@ -28,22 +54,10 @@ jobs:
           - v1-dependencies-
 
       - run: 
-          command: |
-            ./install.sh
+          name: tests
+          command: './gradlew cAT'
 
       - save_cache:
           paths:
             - ~/.m2
-          key: v1-dependencies-{{ checksum "build.gradle" }}
-
-    test:
-      pre:
-        - emulator -avd circleci-android24 -no-window:
-          background: true
-          parallel: true
-        - circle-android wait-for-boot
-      
-      override:
-        command: |
-          fastlane noSDK
-        
+          key: v1-dependencies-{{ checksum "build.gradle" }}    
