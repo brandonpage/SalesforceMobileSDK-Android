@@ -22,8 +22,8 @@
 		</activity>
 	</application>
 
-    <uses-sdk android:minSdkVersion="19"
-        android:targetSdkVersion="25" />
+    <uses-sdk android:minSdkVersion="21"
+        android:targetSdkVersion="26" />
 
     <!--
         GCM permission to ensure that only this application can
