@@ -1,16 +1,10 @@
-# Java Gradle CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-java/ for more details
-#
 version: 2
 jobs:
   build:
     docker:
-      # specify the version you desire here
-      - image: circleci/node:latest
-      - image: circleci/openjdk:8-jdk
+      - image: circleci/android:api-25-alpha
 
-    working_directory: ~/repo
+    working_directory: ~/SalesforceMobileSDK-Android
 
     environment:
       # Customize the JVM maximum heap limit
@@ -18,32 +12,20 @@ jobs:
       TERM: dumb
     
     steps:
-      - checkout      
-
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-          - v1-dependencies-{{ checksum "build.gradle" }}
-          # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
-
-      - run: 
-          command: |
-            ./install.sh
-
-      - save_cache:
-          paths:
-            - ~/.m2
-          key: v1-dependencies-{{ checksum "build.gradle" }}
-
-    test:
-      pre:
-        - emulator -avd circleci-android24 -no-window:
+      - checkout
+      - run:
+          name: Setup emulator
+          command: sdkmanager "system-images;android-22;default;armeabi-v7a" && echo "no" | avdmanager create avd -n test -k "system-images;android-22;default;armeabi-v7a"
+      - run:
+          name: Launch emulator
+          command: export LD_LIBRARY_PATH=${ANDROID_HOME}/emulator/lib64:${ANDROID_HOME}/emulator/lib64/qt/lib && emulator64-arm -avd test -noaudio -no-boot-anim -no-window -accel on
           background: true
-          parallel: true
-        - circle-android wait-for-boot
-      
-      override:
-        command: |
-          fastlane noSDK
-        
+      - run:
+          command: sudo apt-get install ruby-full
+      - run:
+          command: sudo apt-get install build-essential
+      - run:
+          command: sudo gem install fastlane
+      - run: 
+          name: Run Tests
+          command: fastlane PR
