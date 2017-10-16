@@ -4,7 +4,7 @@ system("cd .. && ./install.sh")
 lane :All do
 gradle(
 task:":libs:SalesforceAnalytics:connectedAndroidTest :libs:SalesforceSDK:connectedAndroidTest :libs:SmartStore:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest :libs:SalesforceReact:assembleDebug :native:NativeSampleApps:RestExplorer:connectedAndroidTest",
-flags: "--continue --no-daemon --profile --stacktrace"
+flags: "--continue --no-daemon --profile --stacktrace --max-workers 2"
 )
 end
 

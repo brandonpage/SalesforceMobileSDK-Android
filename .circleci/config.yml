@@ -1,47 +1,56 @@
-version: 2
 jobs:
   build:
     docker:
-      - image: circleci/android:api-26-alpha
+      - image: brandonpage/salesforce-mobilesdk-android-docker-primary:0.0.2
 
     working_directory: ~/SalesforceMobileSDK-Android
 
     environment:
-      # Customize the JVM maximum heap limit
-      JVM_OPTS: -Xmx3200m
-      TERM: dumb
+      - TERM: "dumb"
+      - ADB_INSTALL_TIMEOUT: 10
+      - ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
+      - BUILD_THREADS: 2 
 
     steps:
+      - run:
+          name: Install Build Dependencies
+          command: |
+            sudo apt-get update -y
+            sudo apt-get install ant autoconf automake g++ gcc libqt5widgets5 lib32z1 lib32stdc++6  make maven python-dev python3-dev qml-module-qtquick-controls qtdeclarative5-dev -y
+
       - checkout
+      
+      - run:
+          name:  Create Emulator
+          command: source .circleci/circle-ci-android-setup.sh && createAVD
 
       - run:
-          name: Setup emulator
-          command: sdkmanager "system-images;android-22;default;armeabi-v7a" && echo "no" | avdmanager create avd -n test -k "system-images;android-22;default;armeabi-v7a"
-      - run:
-          name: Launch emulator
-          command: export LD_LIBRARY_PATH=${ANDROID_HOME}/emulator/lib64:${ANDROID_HOME}/emulator/lib64/qt/lib && emulator64-arm -avd test -noaudio -no-boot-anim -no-window -accel on
+          name:  Launch Emulator
+          command: source .circleci/circle-ci-android-setup.sh && launchAVD
           background: true
 
-      # All setup
       - run:
-          name: Update apt-get
-          command: sudo apt-get update
-      - run:
-          name: Get Node
-          command: curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
-      - run:
-          name: Install Node
-          command: sudo apt-get install -y nodejs && node -v && npm -v
-      - run:
-          name:  Install Ruby
-          command: sudo apt-get install ruby-full
-      - run:
-          name:  Install build-essentials
-          command: sudo apt-get install build-essential
-      - run:
-          name:  Install Fastlane
-          command: sudo gem install fastlane
+          name: Create Android NDK Directory
+          command: |
+            if [[ ! -e /opt/ndk ]]; then
+              sudo mkdir /opt/ndk
+            fi
+            sudo chown ${USER:=$(/usr/bin/id -run)}:$USER /opt/ndk
 
       - run:
-          name: Run Tests
-          command: fastlane PR
+          name: Install Android NDK
+          command: source .circleci/circle-ci-android-setup.sh && getAndroidNDK
+
+      - run:
+          name:  Wait for Emulator to boot
+          command: source .circleci/circle-ci-android-setup.sh && waitForAVD
+
+      - run:
+          name: Gradle Dependences (to avoid bug)
+          command: ./gradlew dependencies || true && ./gradlew clean
+
+      - run:
+          name:  Run tests with Fastlane
+          halt_build_on_fail: false
+          command: fastlane All
+          no_output_timeout: 1800
