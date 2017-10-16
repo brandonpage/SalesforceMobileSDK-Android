@@ -47,7 +47,7 @@ jobs:
 
       - run:
           name: Gradle Dependences (to avoid bug)
-          command: ./gradlew dependencies || true && ./gradlew clean
+          command: ./install.sh && ./gradlew dependencies || true && ./gradlew clean
 
       - run:
           name:  Run tests with Fastlane
