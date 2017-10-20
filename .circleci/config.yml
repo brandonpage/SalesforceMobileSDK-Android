@@ -40,8 +40,8 @@ jobs:
       - run:
           name:  Run Tests
           halt_build_on_fail: false
-          command: ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest :libs:SmartStore:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest :libs:SalesforceReact:assembleDebug --continue --no-daemon --profile --max-workers 2
-          no_output_timeout: 1200 
+          command: ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest :libs:SmartStore:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest :libs:SalesforceReact:assembleDebug -p . --continue --no-daemon --profile --max-workers 2 
+          no_output_timeout: 900
 
       - store_artifacts:
           path: ./build/archives
@@ -54,3 +54,13 @@ jobs:
           destination: outputs
       - store_artifacts:
           path: ./build/outputs/androidTest-results/connected/
+
+      - store_artifacts:
+          path: libs/SmartSync/build/reports/androidTests/connected/index.html
+      - store_test_results:
+          path: libs/SmartSync/build/reports/androidTests/connected/index.html
+      - store_artifacts:
+          path: libs/SalesforceHybrid/build/reports/androidTests/connected/index.html
+      - store_test_results:
+          path: libs/SalesforceHybrid/build/reports/androidTests/connected/index.html
+
