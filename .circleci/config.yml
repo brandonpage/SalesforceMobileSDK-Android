@@ -21,17 +21,18 @@ jobs:
           background: true
 
       - checkout
-      - run: ./install.sh
 
       - restore_cache:
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
       - run:
           name: Download Dependencies
           command: ./gradlew androidDependencies && ./gradlew dependencies
+      - run: ./install.sh
       - save_cache:
           paths:
             - ~/.gradle
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
+            - node_modules
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
 
       - run:
           name:  Wait for Emulator to boot
@@ -52,5 +53,5 @@ jobs:
       - store_artifacts:
           path: ./build/outputs
           destination: outputs
-      - store_test_results:
+      - store_artifacts:
           path: ./build/outputs/androidTest-results/connected/
