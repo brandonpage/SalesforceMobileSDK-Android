@@ -16,8 +16,8 @@ jobs:
       - run:
           name:  Launch Emulator
           # name should be env variable 
-          command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
-          #command: emulator -avd test23 -no-audio -no-window -no-boot-anim -gpu off
+          #command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
+          command: emulator -avd test23 -no-audio -no-window -no-boot-anim -gpu off
           background: true
 
       - checkout
