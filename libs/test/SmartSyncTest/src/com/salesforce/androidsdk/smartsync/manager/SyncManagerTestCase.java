@@ -148,18 +148,35 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     }
 
     /**
+     /**
+     * Sync down helper.
+     *
+     * @param mergeMode
+     * @param target
+     * @param soupName
+     * @param totalSize
+     * @param numberFetches
+     * @return
+     * @throws JSONException
+     */
+    protected long trySyncDown(SyncState.MergeMode mergeMode, SyncDownTarget target, String soupName, int totalSize, int numberFetches) throws JSONException {
+        return trySyncDown(mergeMode, target, soupName, totalSize, numberFetches, null);
+    }
+
+    /**
      * Sync down helper.
      *
      * @param mergeMode     Merge mode.
      * @param target        Sync down target.
      * @param soupName      Soup name.
-     * @param totalSize     Expected total size
-     * @param numberFetches Expected number of fetches
+     * @param totalSize     Expected total size.
+     * @param numberFetches Expected number of fetches.
+     * @param syncName      Name for sync or null.
      * @return Sync ID.
      */
-    protected long trySyncDown(SyncState.MergeMode mergeMode, SyncDownTarget target, String soupName, int totalSize, int numberFetches) throws JSONException {
+    protected long trySyncDown(SyncState.MergeMode mergeMode, SyncDownTarget target, String soupName, int totalSize, int numberFetches, String syncName) throws JSONException {
         final SyncOptions options = SyncOptions.optionsForSyncDown(mergeMode);
-        final SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName);
+        final SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName, syncName);
         long syncId = sync.getId();
         checkStatus(sync, SyncState.Type.syncDown, syncId, target, options, SyncState.Status.NEW, 0, -1);
 
@@ -261,6 +278,12 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         assertEquals("Wrong progress", expectedProgress, sync.getProgress());
         if (expectedTotalSize != TOTAL_SIZE_UNKNOWN) {
             assertEquals("Wrong total size", expectedTotalSize, sync.getTotalSize());
+        }
+        if (sync.getStatus() != SyncState.Status.NEW) {
+            assertTrue("Wrong start time", sync.getStartTime() > 0);
+        }
+        if (sync.getStatus() == SyncState.Status.DONE || sync.getStatus() == SyncState.Status.FAILED) {
+            assertTrue("Wrong end time", sync.getEndTime() > 0);
         }
     }
 
@@ -497,7 +520,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
      */
     protected void trySyncUp(SyncUpTarget target, int numberChanges, SyncOptions options, boolean expectSyncFailure) throws JSONException {
         // Create sync
-		SyncState sync = SyncState.createSyncUp(smartStore, target, options, ACCOUNTS_SOUP);
+		SyncState sync = SyncState.createSyncUp(smartStore, target, options, ACCOUNTS_SOUP, null);
 		long syncId = sync.getId();
 		checkStatus(sync, SyncState.Type.syncUp, syncId, target, options, SyncState.Status.NEW, 0, -1);
 
