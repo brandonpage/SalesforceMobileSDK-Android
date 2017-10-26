@@ -98,7 +98,8 @@ workflows:
       - start-api22-emulator
       - setup
       - test-all:
-          requires: setup 
+          requires: 
+            - setup 
 
   Nightly_Flow:
     triggers:
@@ -112,4 +113,5 @@ workflows:
       - start-api24-emulator
       - setup
       - test-all:
-          requires: setup       
+          requires: 
+            - setup       
