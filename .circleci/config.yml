@@ -13,25 +13,13 @@ defaults: &defaults
 
 version: 2
 jobs:
-  start-api22-emulator:
+  setup:
     <<: *defaults
     steps:
       - run:
           name:  Launch Emulator
           command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
           background: true
-
-  start-api24-emulator:
-    <<: *defaults
-    steps:
-      - run:
-          name:  Launch Emulator
-          command: emulator64-arm -avd test24 -no-audio -no-window -no-boot-anim -gpu off
-          background: true
-
-  setup:
-    <<: *defaults
-    steps:
       - checkout
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
@@ -95,7 +83,6 @@ workflows:
 
   PR_Flow:
     jobs:
-      - start-api22-emulator
       - setup
       - test-all:
           requires: 
@@ -110,7 +97,6 @@ workflows:
               only:
                 - dev
     jobs:
-      - start-api24-emulator
       - setup
       - test-all:
           requires: 
