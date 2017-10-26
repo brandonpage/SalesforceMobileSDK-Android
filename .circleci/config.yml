@@ -10,6 +10,14 @@ defaults: &defaults
     - ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
     - BUILD_THREADS: 2
 
+  attach_workspace: &attach_workspace
+    attach_workspace:
+      at: ~/SalesforceMobileSDK-Android
+
+  restore_repo: &restore_repo
+    restore_cach
+      keys:
+        - jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
 
 version: 2
 jobs:
@@ -39,6 +47,8 @@ jobs:
   test-SalesforceAnalytics:
     <<: *defaults
     steps:
+      - *attach_workspace
+      - *restore_repo
       - run:
           name:  Run SalesforceAnalytics Tests
           halt_build_on_fail: false
@@ -53,6 +63,8 @@ jobs:
   test-SalesforceSDK:
     <<: *defaults
     steps:
+      - *attach_workspace
+      - *restore_repo
       - run:
           name:  Run SalesforceSDK Tests
           halt_build_on_fail: false
@@ -67,6 +79,8 @@ jobs:
   test-SmartStore:
     <<: *defaults
     steps:
+      - *attach_workspace
+      - *restore_repo
       - run:
           name:  Run SmartStore Tests
           halt_build_on_fail: false
@@ -81,6 +95,8 @@ jobs:
   test-SmartSync:
     <<: *defaults
     steps:
+      - *attach_workspace
+      - *restore_repo
       - run:
           name:  Run SmartSync Tests
           halt_build_on_fail: false
@@ -95,6 +111,8 @@ jobs:
   test-SalesforceHybrid:
     <<: *defaults
     steps:
+      - *attach_workspace
+      - *restore_repo
       - run:
           name:  Run SalesforceHybrid Tests
           halt_build_on_fail: false
@@ -109,6 +127,8 @@ jobs:
   test-SalesforceReact:
     <<: *defaults
     steps:
+      - *attach_workspace
+      - *restore_repo
       - run:
           name:  Build SalesforceReact
           halt_build_on_fail: false
@@ -117,6 +137,8 @@ jobs:
   combine-test-reports:
     <<: *defaults
     steps:
+      - *attach_workspace
+      - *restore_repo
       - run: npm install -g junit-merge
       - run: 
           name: Combine lib Test Restuls
@@ -130,6 +152,8 @@ jobs:
   test-all:
     <<: *defaults
     steps:
+      - *attach_workspace
+      - *restore_repo
       - run:
           name:  Run Tests
           halt_build_on_fail: false
