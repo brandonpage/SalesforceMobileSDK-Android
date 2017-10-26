@@ -36,6 +36,97 @@ jobs:
           name:  Wait for Emulator to boot
           command: source .circleci/ci-helper.sh && waitForAVD
 
+  test-SalesforceAnalytics:
+    <<: *defaults
+    steps:
+      - run:
+          name:  Run SalesforceAnalytics Tests
+          halt_build_on_fail: false
+          command: ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+          no_output_timeout: 900
+      - store_artifacts:
+          path: libs/SalesforceAnalytics/build/reports/
+          destination: SalesforceAnalytics
+      - store_test_results:
+          path: libs/SalesforceAnalytics/build/outputs/androidTest-results/
+
+  test-SalesforceSDK:
+    <<: *defaults
+    steps:
+      - run:
+          name:  Run SalesforceSDK Tests
+          halt_build_on_fail: false
+          command: ./gradlew :libs:SalesforceSDK:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+          no_output_timeout: 900
+      - store_artifacts:
+          path: libs/SalesforceSDK/build/reports/
+          destination: SalesforceSDK
+      - store_test_results:
+          path: libs/SalesforceSDK/build/outputs/androidTest-results/
+
+  test-SmartStore:
+    <<: *defaults
+    steps:
+      - run:
+          name:  Run SmartStore Tests
+          halt_build_on_fail: false
+          command: ./gradlew :libs:SmartStore:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+          no_output_timeout: 900
+      - store_artifacts:
+          path: libs/SmartStore/build/reports/
+          destination: SmartStore
+      - store_test_results:
+          path: libs/SmartStore/build/outputs/androidTest-results/
+
+  test-SmartSync:
+    <<: *defaults
+    steps:
+      - run:
+          name:  Run SmartSync Tests
+          halt_build_on_fail: false
+          command: ./gradlew :libs:SmartSync:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+          no_output_timeout: 900
+      - store_artifacts:
+          path: libs/SmartSync/build/reports/
+          destination: SmartSync
+      - store_test_results:
+          path: libs/SmartSync/build/outputs/androidTest-results/
+
+  test-SalesforceHybrid:
+    <<: *defaults
+    steps:
+      - run:
+          name:  Run SalesforceHybrid Tests
+          halt_build_on_fail: false
+          command: ./gradlew :libs:SalesforceHybrid:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+          no_output_timeout: 900
+      - store_artifacts:
+          path: libs/SalesforceHybrid/build/reports/
+          destination: SalesforceHybrid
+      - store_test_results:
+          path: libs/SalesforceHybrid/build/outputs/androidTest-results/
+
+  test-SalesforceReact:
+    <<: *defaults
+    steps:
+      - run:
+          name:  Build SalesforceReact
+          halt_build_on_fail: false
+          command: ./gradlew :libs:SalesforceReact:assembleDebug -p . --continue --no-daemon --profile --max-workers 2
+
+  combine-test-reports:
+    <<: *defaults
+    steps:
+      - run: npm install -g junit-merge
+      - run: 
+          name: Combine lib Test Restuls
+          command: junit-merge libs/**/build/outputs/androidTest-results/*.xml
+      - store_artifacts:
+          path: ./merged-test-results.xml
+      - store_test_results:
+          path: ./merged-test-results.xml
+
+
   test-all:
     <<: *defaults
     steps:
@@ -84,9 +175,32 @@ workflows:
   PR_Flow:
     jobs:
       - setup
-      - test-all:
+      - test-SalesforceAnalytics:
           requires: 
             - setup 
+      - test-SalesforceSDK:
+          requires:
+            - setup
+      - test-SmartStore:
+          requires:
+            - setup
+      - test-SmartSync:
+          requires:
+            - setup
+      - test-SalesforceHybrid:
+          requires:
+            - setup
+      - test-SalesforceReact:
+          requires:
+            - setup
+      - combine-test-reports:
+          requires:
+            - test-SalesforceAnalytics
+            - test-SalesforceSDK
+            - test-SmartStore
+            - test-SmartSync
+            - test-SalesforceHybrid
+            - test-SalesforceReact
 
   Nightly_Flow:
     triggers:
