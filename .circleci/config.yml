@@ -11,8 +11,9 @@ defaults: &defaults
     - BUILD_THREADS: 2
 
 
+version: 2
 jobs:
-  build:
+  start-api22-emulator:
     <<: *defaults
     steps:
       - run:
@@ -20,8 +21,18 @@ jobs:
           command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
           background: true
 
-      - checkout
+  start-api24-emulator:
+    <<: *defaults
+    steps:
+      - run:
+          name:  Launch Emulator
+          command: emulator64-arm -avd test24 -no-audio -no-window -no-boot-anim -gpu off
+          background: true
 
+  setup:
+    <<: *defaults
+    steps:
+      - checkout
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
       - run:
@@ -37,6 +48,9 @@ jobs:
           name:  Wait for Emulator to boot
           command: source .circleci/ci-helper.sh && waitForAVD
 
+  test-all:
+    <<: *defaults
+    steps:
       - run:
           name:  Run Tests
           halt_build_on_fail: false
@@ -68,11 +82,34 @@ jobs:
           destination: SalesforceHybrid
       - store_test_results:
           path: libs/SalesforceHybrid/outputs/androidTest-results/
+ 
+      - run: npm install -g junit-merge
+      - run: 
+          name: Combine lib Test Restuls
+          command: junit-merge libs/**/build/outputs/androidTest-results/*.xml 
+
+
 
 workflows:
   version: 2
-  test_all:
+
+  PR_Flow:
     jobs:
-      - build
+      - start-api22-emulator
+      - setup
       - test-all:
-          requires: build        
+          requires: setup 
+
+  Nightly_Flow:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - dev
+    jobs:
+      - start-api24-emulator
+      - setup
+      - test-all:
+          requires: setup       
