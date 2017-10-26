@@ -15,7 +15,7 @@ defaults: &defaults
       at: ~/SalesforceMobileSDK-Android
 
   restore_repo: &restore_repo
-    restore_cach
+    restore_cache:
       keys:
         - jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
 
