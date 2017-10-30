@@ -24,10 +24,6 @@ jobs:
   setup:
     <<: *defaults
     steps:
-      - run:
-          name:  Launch Emulator
-          command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
-          background: true
       - checkout
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
@@ -39,16 +35,26 @@ jobs:
             - ~/.gradle
             - node_modules
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
+      - persist_to_workspace:
+          # Must be an absolute path, or relative path from working_directory
+          root: .
+          # Must be relative path from root
+          paths:
+            - ./**
 
-      - run:
-          name:  Wait for Emulator to boot
-          command: source .circleci/ci-helper.sh && waitForAVD
 
   test-SalesforceAnalytics:
     <<: *defaults
     steps:
       - *attach_workspace
       - *restore_repo
+      - run:
+          name:  Launch Emulator
+          command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
+          background: true
+      - run:
+          name:  Wait for Emulator to boot
+          command: source .circleci/ci-helper.sh && waitForAVD
       - run:
           name:  Run SalesforceAnalytics Tests
           halt_build_on_fail: false
@@ -66,6 +72,13 @@ jobs:
       - *attach_workspace
       - *restore_repo
       - run:
+          name:  Launch Emulator
+          command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
+          background: true
+      - run:
+          name:  Wait for Emulator to boot
+          command: source .circleci/ci-helper.sh && waitForAVD
+      - run:
           name:  Run SalesforceSDK Tests
           halt_build_on_fail: false
           command: ./gradlew :libs:SalesforceSDK:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
@@ -81,6 +94,13 @@ jobs:
     steps:
       - *attach_workspace
       - *restore_repo
+      - run:
+          name:  Launch Emulator
+          command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
+          background: true
+      - run:
+          name:  Wait for Emulator to boot
+          command: source .circleci/ci-helper.sh && waitForAVD
       - run:
           name:  Run SmartStore Tests
           halt_build_on_fail: false
@@ -98,6 +118,13 @@ jobs:
       - *attach_workspace
       - *restore_repo
       - run:
+          name:  Launch Emulator
+          command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
+          background: true
+      - run:
+          name:  Wait for Emulator to boot
+          command: source .circleci/ci-helper.sh && waitForAVD
+      - run:
           name:  Run SmartSync Tests
           halt_build_on_fail: false
           command: ./gradlew :libs:SmartSync:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
@@ -114,6 +141,13 @@ jobs:
       - *attach_workspace
       - *restore_repo
       - run:
+          name:  Launch Emulator
+          command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
+          background: true
+      - run:
+          name:  Wait for Emulator to boot
+          command: source .circleci/ci-helper.sh && waitForAVD
+      - run:
           name:  Run SalesforceHybrid Tests
           halt_build_on_fail: false
           command: ./gradlew :libs:SalesforceHybrid:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
@@ -129,6 +163,13 @@ jobs:
     steps:
       - *attach_workspace
       - *restore_repo
+      - run:
+          name:  Launch Emulator
+          command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
+          background: true
+      - run:
+          name:  Wait for Emulator to boot
+          command: source .circleci/ci-helper.sh && waitForAVD
       - run:
           name:  Build SalesforceReact
           halt_build_on_fail: false
@@ -184,13 +225,12 @@ jobs:
           path: libs/SalesforceHybrid/build/reports/
           destination: SalesforceHybrid
       - store_test_results:
-          path: libs/SalesforceHybrid/outputs/androidTest-results/
+          path: libs/SalesforceHybrid/build/outputs/androidTest-results/
  
       - run: npm install -g junit-merge
       - run: 
           name: Combine lib Test Restuls
           command: junit-merge libs/**/build/outputs/androidTest-results/*.xml 
-
 
 
 workflows:
