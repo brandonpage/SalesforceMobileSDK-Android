@@ -100,7 +100,9 @@ public class RestClientTest extends InstrumentationTestCase {
         super.setUp();
         TestCredentials.init(getInstrumentation().getContext());
         httpAccess = new HttpAccess(null, "dummy-agent");
-        TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
+        TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
+                new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID,
+                TestCredentials.REFRESH_TOKEN, null);
         authToken = refreshResponse.authToken;
         instanceUrl = refreshResponse.instanceUrl;
         testOauthKeys = new ArrayList<>();
@@ -108,8 +110,7 @@ public class RestClientTest extends InstrumentationTestCase {
         testOauthValues = new HashMap<>();
         testOauthValues.put(TEST_CUSTOM_KEY, TEST_CUSTOM_VALUE);
         SalesforceSDKManager.getInstance().setAdditionalOauthKeys(testOauthKeys);
-        clientInfo = new ClientInfo(TestCredentials.CLIENT_ID,
-        		new URI(TestCredentials.INSTANCE_URL),
+        clientInfo = new ClientInfo(new URI(TestCredentials.INSTANCE_URL),
         		new URI(TestCredentials.LOGIN_URL),
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
@@ -132,7 +133,6 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws URISyntaxException
      */
     public void testGetClientInfo() throws URISyntaxException {
-        assertEquals("Wrong client id", TestCredentials.CLIENT_ID, restClient.getClientInfo().clientId);
         assertEquals("Wrong instance url", new URI(TestCredentials.INSTANCE_URL), restClient.getClientInfo().instanceUrl);
         assertEquals("Wrong login url", new URI(TestCredentials.LOGIN_URL), restClient.getClientInfo().loginUrl);
         assertEquals("Wrong account name", TestCredentials.ACCOUNT_NAME, restClient.getClientInfo().accountName);
@@ -161,8 +161,7 @@ public class RestClientTest extends InstrumentationTestCase {
     }
 
     public void testClientInfoResolveUrlForCommunityUrl() throws Exception {
-        final ClientInfo info = new ClientInfo(TestCredentials.CLIENT_ID,
-        		new URI(TestCredentials.INSTANCE_URL),
+        final ClientInfo info = new ClientInfo(new URI(TestCredentials.INSTANCE_URL),
         		new URI(TestCredentials.LOGIN_URL),
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
@@ -173,8 +172,7 @@ public class RestClientTest extends InstrumentationTestCase {
     }
 
     public void testGetInstanceUrlForCommunity() throws Exception {
-        final ClientInfo info = new ClientInfo(TestCredentials.CLIENT_ID,
-        		new URI(TestCredentials.INSTANCE_URL),
+        final ClientInfo info = new ClientInfo(new URI(TestCredentials.INSTANCE_URL),
         		new URI(TestCredentials.LOGIN_URL),
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
@@ -201,8 +199,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws IOException
      */
     public void testCallWithBadAuthToken() throws URISyntaxException, IOException {
-        RestClient.clearOkClientBuildersCache();
-        RestClient.clearOkClientsCache();
+        RestClient.clearCaches();
         RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, null);
         RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
         assertFalse("Expected error", response.isSuccess());
@@ -216,8 +213,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws IOException
      */
     public void testCallWithBadTokenAndTokenProvider() throws URISyntaxException, IOException {
-        RestClient.clearOkClientBuildersCache();
-        RestClient.clearOkClientsCache();
+        RestClient.clearCaches();
         AuthTokenProvider authTokenProvider = new AuthTokenProvider() {
             @Override
             public String getNewAuthToken() {
@@ -252,8 +248,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws IOException
      */
     public void testCallWithBadInstanceUrl() throws URISyntaxException, IOException {
-        RestClient.clearOkClientBuildersCache();
-        RestClient.clearOkClientsCache();
+        RestClient.clearCaches();
         AuthTokenProvider authTokenProvider = new AuthTokenProvider() {
             @Override
             public String getNewAuthToken() {
@@ -615,33 +610,31 @@ public class RestClientTest extends InstrumentationTestCase {
     }
     
     /**
-     * Testing doing a sync request against a non salesforce public api with a RestClient that uses an UnauthenticatedClientInfo
+     * Testing doing a sync request with a RestClient that uses an UnauthenticatedClientInfo
      * @return
      * @throws Exception
      */
     public void testRestClientUnauthenticatedlientInfo() throws Exception {
         RestClient unauthenticatedRestClient = new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
-        RestRequest request = new RestRequest(RestMethod.GET, "https://api.spotify.com/v1/search?q=James%20Brown&type=artist");
+        RestRequest request = new RestRequest(RestMethod.GET, "https://na1.salesforce.com/services/data");
         RestResponse response = unauthenticatedRestClient.sendSync(request);
-        checkResponse(response, HttpURLConnection.HTTP_OK, false);
-        JSONObject jsonResponse = response.asJSONObject();
-        checkKeys(jsonResponse, "artists");
-        checkKeys(jsonResponse.getJSONObject("artists"), "href", "items", "limit", "next", "offset", "previous", "total");
+        checkResponse(response, HttpURLConnection.HTTP_OK, true);
+        JSONArray jsonResponse = response.asJSONArray();
+        checkKeys(jsonResponse.getJSONObject(0), "label", "url", "version");
     }
 
     /**
-     * Testing doing an async request against a non salesforce public api with a RestClient that uses an UnauthenticatedClientInfo
+     * Testing doing an async request with a RestClient that uses an UnauthenticatedClientInfo
      * @return
      * @throws Exception
      */
     public void testRestClientUnauthenticatedlientInfoAsync() throws Exception {
         RestClient unauthenticatedRestClient = new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
-        RestRequest request = new RestRequest(RestMethod.GET, "https://api.spotify.com/v1/search?q=James%20Brown&type=artist");
+        RestRequest request = new RestRequest(RestMethod.GET, "https://na1.salesforce.com/services/data");
         RestResponse response = sendAsync(unauthenticatedRestClient, request);
-        checkResponse(response, HttpURLConnection.HTTP_OK, false);
-        JSONObject jsonResponse = response.asJSONObject();
-        checkKeys(jsonResponse, "artists");
-        checkKeys(jsonResponse.getJSONObject("artists"), "href", "items", "limit", "next", "offset", "previous", "total");
+        checkResponse(response, HttpURLConnection.HTTP_OK, true);
+        JSONArray jsonResponse = response.asJSONArray();
+        checkKeys(jsonResponse.getJSONObject(0), "label", "url", "version");
     }
 
     /**
