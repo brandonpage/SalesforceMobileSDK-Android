@@ -46,7 +46,9 @@ jobs:
     <<: *defaults
     steps:
       - *attach_workspace
-      - *restore_repo
+      - run: ls
+      - run: ls libs/SalesforceAnalytics/
+      #- *restore_repo
       - run:
           name:  Launch Emulator
           command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
@@ -69,7 +71,8 @@ jobs:
     <<: *defaults
     steps:
       - *attach_workspace
-      - *restore_repo
+      - run: ls
+      #- *restore_repo
       - run:
           name:  Launch Emulator
           command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
@@ -92,7 +95,8 @@ jobs:
     <<: *defaults
     steps:
       - *attach_workspace
-      - *restore_repo
+      - run: ls
+      #- *restore_repo
       - run:
           name:  Launch Emulator
           command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
@@ -115,7 +119,8 @@ jobs:
     <<: *defaults
     steps:
       - *attach_workspace
-      - *restore_repo
+      - run: ls
+      #- *restore_repo
       - run:
           name:  Launch Emulator
           command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
@@ -138,7 +143,8 @@ jobs:
     <<: *defaults
     steps:
       - *attach_workspace
-      - *restore_repo
+      - run: ls
+      #- *restore_repo
       - run:
           name:  Launch Emulator
           command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
@@ -161,14 +167,6 @@ jobs:
     <<: *defaults
     steps:
       - *attach_workspace
-      - *restore_repo
-      - run:
-          name:  Launch Emulator
-          command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
-          background: true
-      - run:
-          name:  Wait for Emulator to boot
-          command: source .circleci/ci-helper.sh && waitForAVD
       - run:
           name:  Build SalesforceReact
           halt_build_on_fail: false
@@ -193,7 +191,7 @@ jobs:
     <<: *defaults
     steps:
       - *attach_workspace
-      - *restore_repo
+      #- *restore_repo
       - run:
           name:  Run Tests
           halt_build_on_fail: false
