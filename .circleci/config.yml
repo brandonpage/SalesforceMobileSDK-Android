@@ -1,7 +1,7 @@
 defaults: &defaults
   working_directory: ~/SalesforceMobileSDK-Android
   docker:
-    - image: brandonpage/salesforce-mobilesdk-android-docker-primary:0.0.3
+    - image: brandonpage/salesforce-mobilesdk-android-docker-primary:0.0.4
       environment:
       MAVEN_OPTS: "-Xms256m -Xmx1024m"
   environment:
