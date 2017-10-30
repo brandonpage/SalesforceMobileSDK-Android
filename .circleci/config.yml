@@ -46,9 +46,7 @@ jobs:
     <<: *defaults
     steps:
       - *attach_workspace
-      - run: ls
-      - run: ls libs/SalesforceAnalytics/
-      #- *restore_repo
+      - run: sleep 30
       - run:
           name:  Launch Emulator
           command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
@@ -71,8 +69,7 @@ jobs:
     <<: *defaults
     steps:
       - *attach_workspace
-      - run: ls
-      #- *restore_repo
+      - run: sleep 30
       - run:
           name:  Launch Emulator
           command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
@@ -90,13 +87,13 @@ jobs:
           destination: SalesforceSDK
       - store_test_results:
           path: libs/SalesforceSDK/build/outputs/androidTest-results/
+      - run: ls libs/SalesforceAnalytics/build/outputs/androidTest-results/
 
   test-SmartStore:
     <<: *defaults
     steps:
       - *attach_workspace
-      - run: ls
-      #- *restore_repo
+      - run: sleep 30
       - run:
           name:  Launch Emulator
           command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
@@ -114,13 +111,13 @@ jobs:
           destination: SmartStore
       - store_test_results:
           path: libs/SmartStore/build/outputs/androidTest-results/
+      - run: ls libs/SalesforceAnalytics/build/outputs/androidTest-results/
 
   test-SmartSync:
     <<: *defaults
     steps:
       - *attach_workspace
-      - run: ls
-      #- *restore_repo
+      - run: sleep 30
       - run:
           name:  Launch Emulator
           command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
@@ -138,13 +135,13 @@ jobs:
           destination: SmartSync
       - store_test_results:
           path: libs/SmartSync/build/outputs/androidTest-results/
+      - run: ls libs/SalesforceAnalytics/build/outputs/androidTest-results/
 
   test-SalesforceHybrid:
     <<: *defaults
     steps:
       - *attach_workspace
-      - run: ls
-      #- *restore_repo
+      - run: sleep 30
       - run:
           name:  Launch Emulator
           command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
@@ -162,6 +159,7 @@ jobs:
           destination: SalesforceHybrid
       - store_test_results:
           path: libs/SalesforceHybrid/build/outputs/androidTest-results/
+      - run: ls libs/SalesforceAnalytics/build/outputs/androidTest-results/
 
   test-SalesforceReact:
     <<: *defaults
