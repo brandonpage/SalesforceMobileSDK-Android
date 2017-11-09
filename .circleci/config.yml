@@ -16,10 +16,6 @@ jobs:
 
     steps:
       - run:
-          name: Danger Vars
-          command: "${DANGER_GITHUB_TOKEN:?No danger token}"
-
-      - run:
           name:  Launch Emulator
           command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
           background: true
