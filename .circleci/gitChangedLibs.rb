@@ -6,7 +6,6 @@ $libs = ["SalesforceAnalytics", "SalesforceHybridSDK", "SalesforceReact", "Sales
 prFilesAPI = $GITPRAPI % [ENV["CIRCLE_PROJECT_USERNAME"], ENV["CIRCLE_PR_NUMBER"]]
 puts "prFIelsAPI: " + prFilesAPI
 curlCommand = "curl %s -H 'Authorization: token %s'" % [prFilesAPI, ENV["GITHUB_TOKEN"]]
-puts "Curl Command: " + curlCommand
 pullfiles = `#{curlCommand}`
 prfiles = JSON.parse(pullfiles)
 
