@@ -1,10 +1,12 @@
 require 'json'
 
-$GITPRAPI = "https://api.github.com/repos/forcedotcom/SalesforceMobileSDK-android/pulls/%s/files"
+$GITPRAPI = "https://api.github.com/repos/%s/SalesforceMobileSDK-android/pulls/%s/files"
 $libs = ["SalesforceAnalytics", "SalesforceHybridSDK", "SalesforceReact", "SalesforceSDKCore", "SmartStore", "SmartSync"]
 
-prFilesAPI = $GITPRAPI % ENV["CIRCLE_PR_NUMBER"]
+prFilesAPI = $GITPRAPI % [ENV["CIRCLE_PROJECT_USERNAME"], ENV["CIRCLE_PR_NUMBER"]]
+puts "prFIelsAPI: " + prFilesAPI
 curlCommand = "curl %s -H 'Authorization: token %s'" % [prFilesAPI, ENV["GITHUB_TOKEN"]]
+puts "Curl Command: " + curlCommand
 pullfiles = `#{curlCommand}`
 prfiles = JSON.parse(pullfiles)
 
