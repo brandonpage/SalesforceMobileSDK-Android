@@ -13,6 +13,7 @@ jobs:
       - ADB_INSTALL_TIMEOUT: 15
       - ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
       - BUILD_THREADS: 2 
+      - LIB_VAR: "none"
 
     steps:
       - run:
@@ -40,6 +41,32 @@ jobs:
             else
               echo "No need to test Core"
             fi 
+
+            if [[ $changed_libs == *"SalesforceHybrid"* ]]; then
+              echo "Should test Hybird"
+            else
+              echo "No need to test Hybrid"
+            fi
+
+            if [[ $changed_libs == *"SmartSync"* ]]; then
+              echo "Should test SmartSync"
+            else
+              echo "No need to test SmartSync"
+            fi
+
+            if [[ $changed_libs == *"SmartStore"* ]]; then
+              echo "Should test SmartStore"
+            else
+              echo "No need to test SmartStore"
+            fi
+
+            LIB_VAR=changed_libs
+            echo LIB_VAR
+
+
+      - run:
+          name:  Check if Vars Persist
+          Command: echo LIB_VAR
 
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
