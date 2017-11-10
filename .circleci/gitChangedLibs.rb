@@ -1,7 +1,7 @@
 require 'json'
 
 $GITPRAPI = "https://api.github.com/repos/%s/SalesforceMobileSDK-android/pulls/%s/files"
-$libs = ["SalesforceAnalytics", "SalesforceHybridSDK", "SalesforceReact", "SalesforceSDKCore", "SmartStore", "SmartSync"]
+$LIBS = ["SalesforceAnalytics", "SalesforceHybridSDK", "SalesforceReact", "SalesforceSDKCore", "SmartStore", "SmartSync"]
 
 prFilesAPI = $GITPRAPI % [ENV["CIRCLE_PROJECT_USERNAME"], ENV["CIRCLE_PR_NUMBER"]]
 puts "prFIelsAPI: " + prFilesAPI
@@ -12,12 +12,13 @@ prfiles = JSON.parse(pullfiles)
 # delete me
 puts "PR Files: " + prfiles.to_a().join(",")
 
+libs = Set.new
 for prfile in prfiles
   path = prfile["filename"]
-  for lib in $libs
+  for lib in $LIBS
     if path.include? lib
-      testLibs = testLibs.add(lib)
+      libs = libs.add(lib)
     end
   end
 end
-puts "Libs:" + testLibs.to_a().join(",")
+puts "Libs:" + libs.to_a().join(",")
