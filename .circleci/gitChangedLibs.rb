@@ -4,7 +4,7 @@ $GITPRAPI = "https://api.github.com/repos/forcedotcom/SalesforceMobileSDK-androi
 $libs = ["SalesforceAnalytics", "SalesforceHybridSDK", "SalesforceReact", "SalesforceSDKCore", "SmartStore", "SmartSync"]
 
 prFilesAPI = $GITPRAPI % ENV["CIRCLE_PR_NUMBER"]
-curlCommand = "curl %s -H 'Authorization: token %s'" % [prFilesAPI, ENV["CIRCLE_TOKEN"]]
+curlCommand = "curl %s -H 'Authorization: token %s'" % [prFilesAPI, ENV["GITHUB_TOKEN"]]
 pullfiles = `#{curlCommand}`
 prfiles = JSON.parse(pullfiles)
 
