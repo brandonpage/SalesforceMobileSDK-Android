@@ -13,7 +13,7 @@ jobs:
       - ADB_INSTALL_TIMEOUT: 15
       - ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
       - BUILD_THREADS: 2 
-      - LIB_VAR: "none"
+      - LIB_VAR: ""
 
     steps:
       - run:
@@ -61,12 +61,12 @@ jobs:
             fi
 
             LIB_VAR=changed_libs
-            echo LIB_VAR
+            echo $LIB_VAR
 
 
       - run:
           name:  Check if Vars Persist
-          Command: echo LIB_VAR
+          Command: echo $LIB_VAR
 
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
