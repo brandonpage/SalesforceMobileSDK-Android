@@ -5,8 +5,7 @@ $GITPRAPI = "https://api.github.com/repos/%s/SalesforceMobileSDK-android/pulls/%
 $libs = ["SalesforceAnalytics", "SalesforceHybridSDK", "SalesforceReact", "SalesforceSDKCore", "SmartStore", "SmartSync"]
 
 prFilesAPI = $GITPRAPI % [ENV["CIRCLE_PROJECT_USERNAME"], ENV["CIRCLE_PR_NUMBER"]]
-curlCommand = "curl %s" % [prFilesAPI]
-pullfiles = `#{curlCommand}`
+pullfiles = `#{"curl %s" % [prFilesAPI]}`
 prfiles = JSON.parse(pullfiles)
 
 libs = Set.new
@@ -18,4 +17,5 @@ for prfile in prfiles
     end
   end
 end
-puts libs.to_a().join(" ")
+
+print libs.to_a().join(",")

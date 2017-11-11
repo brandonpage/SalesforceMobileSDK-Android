@@ -23,50 +23,11 @@ jobs:
       - checkout
 
       - run:
-          name: PR Files Test
+          name: Determine Tests to Run
           shell: /bin/bash
           command:  |
-            changed_libs=$(ruby .circleci/gitChangedLibs.rb)
-            echo "Changed Libs: $changed_libs"
-
-            #For Testing
-            if [[ $changed_libs == *"SalesforceAnalytics"* ]]; then
-              echo "Should test Analytics"
-            else
-              echo "No need to test Analytics"
-            fi
-
-            if [[ $changed_libs == *"SalesforceSDK"* ]]; then
-              echo "Should test Core"
-            else
-              echo "No need to test Core"
-            fi 
-
-            if [[ $changed_libs == *"SalesforceHybrid"* ]]; then
-              echo "Should test Hybird"
-            else
-              echo "No need to test Hybrid"
-            fi
-
-            if [[ $changed_libs == *"SmartSync"* ]]; then
-              echo "Should test SmartSync"
-            else
-              echo "No need to test SmartSync"
-            fi
-
-            if [[ $changed_libs == *"SmartStore"* ]]; then
-              echo "Should test SmartStore"
-            else
-              echo "No need to test SmartStore"
-            fi
-            
-            echo "Changed Libs ${changed_libs}"
-            echo "export LIB_VAR=${changed_libs}" >> "${BASH_ENV}"
-            echo "env var ${LIB_VAR}"
-
-      - run:
-          name:  Check if Vars Persist
-          command: echo "Global Var ${LIB_VAR}"
+            echo -e "export LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)" >> "${BASH_ENV}"
+            echo -e "env var ${LIBS_TO_TEST//,/ ,}"
 
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
@@ -86,39 +47,74 @@ jobs:
       - run:
           name: Run SalesforceAnalytics Tests
           halt_build_on_fail: false
-          command: ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
           no_output_timeout: 900
           when: always
+          command: |
+            if [[ ${LIBS_TO_TEST} == *"SalesforceAnalytics"* ]]; then
+              ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+            else
+              echo "No need to run SalesforceAnalytics tests for this PR."
+            fi
+
       - run:
-          name: Run SalesforceSDK Tests
+          name: Run Salesforce Core Tests
           halt_build_on_fail: false
-          command: ./gradlew :libs:SalesforceSDK:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
           no_output_timeout: 900
           when: always
+          command: |
+            if [[ ${LIBS_TO_TEST} == *"SalesforceSDK"* ]]; then
+              ./gradlew :libs:SalesforceSDK:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+            else
+              echo "No need to run Salesforce Core tests for this PR."
+            fi
+
       - run:
           name: Run SmartStore Tests
           halt_build_on_fail: false
-          command: ./gradlew :libs:SmartStore:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
           no_output_timeout: 900
           when: always
+          command: |
+            if [[ ${LIBS_TO_TEST} == *"SmartStore"* ]]; then
+              ./gradlew :libs:SmartStore:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+            else
+              echo "No need to run SmartStore tests for this PR."
+            fi
+ 
       - run:
           name: Run SmartSync Tests
           halt_build_on_fail: false
-          command: ./gradlew :libs:SmartSync:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
           no_output_timeout: 900
           when: always
+          command: |
+            if [[ ${LIBS_TO_TEST} == *"SmartSync"* ]]; then
+              ./gradlew :libs:SmartSync:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+            else
+              echo "No need to run SmartSync tests for this PR."
+            fi
+
       - run:
           name: Run SalesforceHybrid Tests
           halt_build_on_fail: false
-          command: ./gradlew :libs:SalesforceHybrid:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
           no_output_timeout: 900
           when: always
+          command: |
+            if [[ ${LIBS_TO_TEST} == *"SalesforceHybrid"* ]]; then
+              ./gradlew :libs:SalesforceHyrbid:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+            else
+              echo "No need to run SalesforceHybrid tests for this PR."
+            fi
+
       - run:
           name: Build SalesforceReact
           halt_build_on_fail: false
-          command: ./gradlew :libs:SalesforceReact:assembleDebug -p . --continue --no-daemon --profile --max-workers 2
           no_output_timeout: 900
           when: always
+          command: |
+            if [[ ${LIBS_TO_TEST} == *"SalesforceReact"* ]]; then
+              ./gradlew :libs:SalesforceReact:assembleDebug -p . --continue --no-daemon --profile --max-workers 2 
+            else
+              echo "No need to build SalesforceReact for this PR."
+            fi
 
       - run:
           name: Combine lib Test Restuls
