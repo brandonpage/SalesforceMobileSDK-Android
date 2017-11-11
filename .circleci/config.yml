@@ -25,7 +25,7 @@ jobs:
       - run:
           name: Determine Tests to Run
           shell: /bin/bash
-          command:  echo "export LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)" >> "${BASH_ENV}" && echo "\n\nLibraries to Test-> ${LIBS_TO_TEST}"
+          command:  echo "export LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)" >> "${BASH_ENV}" && echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST}"
 
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
