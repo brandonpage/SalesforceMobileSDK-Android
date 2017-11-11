@@ -62,6 +62,7 @@ jobs:
             
             echo "Changed Libs ${changed_libs}"
             echo "export LIB_VAR=${changed_libs}" >> "${BASH_ENV}"
+            echo "env var ${LIB_VAR}"
 
       - run:
           name:  Check if Vars Persist
