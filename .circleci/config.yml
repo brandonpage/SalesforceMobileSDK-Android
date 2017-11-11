@@ -14,7 +14,7 @@ jobs:
       - ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
       - BUILD_THREADS: 2 
       #- LIB_VAR: "global var not changed"
-      - BASH_ENV: ~/.bashrc
+      #- BASH_ENV: ~/.bashrc
 
     steps:
       - run:
@@ -66,7 +66,7 @@ jobs:
             
 
             echo "Libs: $changed_libs"
-            echo 'export LIB_VAR=$changed_libs' >> ~/.bashrc 
+            echo 'export LIB_VAR=$changed_libs' >> $BASH_ENV 
 
       - run:
           name:  Check if Vars Persist
