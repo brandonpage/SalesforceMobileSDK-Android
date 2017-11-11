@@ -26,6 +26,7 @@ jobs:
 
       - run:
           name: PR Files Test
+          shell: /bin/bash
           command:  |
             changed_libs=$(ruby .circleci/gitChangedLibs.rb)
             echo "Changed Libs: $changed_libs"
@@ -66,13 +67,14 @@ jobs:
             
 
             #echo "Libs: $changed_libs"
-            echo 'export LIB_VAR="$changed_libs"' >> $BASH_ENV
-            source $BASH_ENV
-            echo "Env Var: $LIB_VAR"  
+            #LIB_VAR=$changed_libs;
+            echo "export LIB_VAR=${changed_libs}" >> "${BASH_ENV}"
+            #source $BASH_ENV
+            echo "Env Var: ${LIB_VAR}"  
 
       - run:
           name:  Check if Vars Persist
-          command: echo "Global Var $LIB_VAR"
+          command: echo "Global Var ${LIB_VAR}"
 
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
