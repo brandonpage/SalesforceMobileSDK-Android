@@ -13,8 +13,6 @@ jobs:
       - ADB_INSTALL_TIMEOUT: 15
       - ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
       - BUILD_THREADS: 2 
-      #- LIB_VAR: "global var not changed"
-      #- BASH_ENV: ~/.bashrc
 
     steps:
       - run:
@@ -61,16 +59,9 @@ jobs:
             else
               echo "No need to test SmartStore"
             fi
-
-            #LIB_VAR=$changed_libs
-            #echo "Set Gloabal Var: $LIB_VAR"
             
-
-            #echo "Libs: $changed_libs"
-            #LIB_VAR=$changed_libs;
+            echo "Changed Libs ${changed_libs}"
             echo "export LIB_VAR=${changed_libs}" >> "${BASH_ENV}"
-            #source $BASH_ENV
-            echo "Env Var: ${LIB_VAR}"  
 
       - run:
           name:  Check if Vars Persist
