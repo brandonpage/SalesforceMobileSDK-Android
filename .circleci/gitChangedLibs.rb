@@ -18,4 +18,4 @@ for prfile in prfiles
     end
   end
 end
-puts libs.to_a().join(", ")
+puts libs.to_a().join(" ")
