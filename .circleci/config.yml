@@ -65,7 +65,7 @@ jobs:
 
       - run:
           name:  Check if Vars Persist
-          Command: echo "Global Var: $LIB_VAR"
+          Command: echo "Global Var $LIB_VAR"
 
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
