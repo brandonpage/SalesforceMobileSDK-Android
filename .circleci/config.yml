@@ -1,0 +1,295 @@
+defaults: &defaults
+  working_directory: ~/SalesforceMobileSDK-Android
+  docker:
+    - image: brandonpage/salesforce-mobilesdk-android-docker-primary:0.0.4
+      environment:
+      MAVEN_OPTS: "-Xms256m -Xmx1024m"
+  environment:
+    - TERM: "dumb"
+    - ADB_INSTALL_TIMEOUT: 15
+    - ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
+    - BUILD_THREADS: 2
+
+  attach_workspace: &attach_workspace
+    attach_workspace:
+      at: ~/SalesforceMobileSDK-Android
+
+  restore_repo: &restore_repo
+    restore_cache:
+      keys:
+        - jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
+
+version: 2
+jobs:
+  setup:
+    <<: *defaults
+    steps:
+      - checkout
+      - run:
+          name: Determine Tests to Run
+          shell: /bin/bash
+          command: source .circleci/ci-helper.sh && printTestsToRun
+      - run:
+          name:  Run Danger
+          when: always
+          command: source .circleci/ci-helper.sh && runDangerPR
+          background: true
+      - restore_cache:
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
+      - run:
+          name: Download Dependencies
+          command: ./install.sh && ./gradlew androidDependencies && ./gradlew dependencies
+      - save_cache:
+          paths:
+            - ~/.gradle
+            - node_modules
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
+      - persist_to_workspace:
+          # Must be an absolute path, or relative path from working_directory
+          root: .
+          # Must be relative path from root
+          paths:
+            - ./**
+
+  test-SalesforceAnalytics:
+    <<: *defaults
+    environment:
+      - CURRENT_LIB: "SalesforceAnalytics"
+    steps:
+      - *attach_workspace
+      - run:
+          name:  Launch Emulator
+          command: source .circleci/ci-helper.sh && startAVD
+          background: true
+      - run:
+          name:  Wait for Emulator to boot
+          command: source .circleci/ci-helper.sh && waitForAVD
+      - run:
+          name:  Run SalesforceAnalytics Tests
+          halt_build_on_fail: false
+          command: source .circleci/ci-helper.sh && runTests
+          no_output_timeout: 900
+      - store_artifacts:
+          path: libs/SalesforceAnalytics/build/reports/
+          destination: SalesforceAnalytics
+      - store_test_results:
+          path: libs/SalesforceAnalytics/build/outputs/androidTest-results/
+      - run:
+          name:  Run Danger
+          when: always
+          command: source .circleci/ci-helper.sh && runDangerLib
+
+  test-SalesforceSDK:
+    <<: *defaults
+    environment:
+      - CURRENT_LIB: "SalesforceSDK"
+    steps:
+      - *attach_workspace
+      - run: sleep 30
+      - run:
+          name:  Launch Emulator
+          command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
+          background: true
+      - run:
+          name:  Wait for Emulator to boot
+          command: source .circleci/ci-helper.sh && waitForAVD
+      - run:
+          name:  Run SalesforceSDK Tests
+          halt_build_on_fail: false
+          command: ./gradlew :libs:SalesforceSDK:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+          no_output_timeout: 900
+      - store_artifacts:
+          path: libs/SalesforceSDK/build/reports/
+          destination: SalesforceSDK
+      - store_test_results:
+          path: libs/SalesforceSDK/build/outputs/androidTest-results/
+      - run:
+        name:  Run Danger
+        when: always
+        command: source .circleci/ci-helper.sh && runDangerLib
+
+  test-SmartStore:
+    <<: *defaults
+    environment:
+      - CURRENT_LIB: "SmartStore"
+    steps:
+      - *attach_workspace
+      - run: sleep 30
+      - run:
+          name:  Launch Emulator
+          command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
+          background: true
+      - run:
+          name:  Wait for Emulator to boot
+          command: source .circleci/ci-helper.sh && waitForAVD
+      - run:
+          name:  Run SmartStore Tests
+          halt_build_on_fail: false
+          command: ./gradlew :libs:SmartStore:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+          no_output_timeout: 900
+      - store_artifacts:
+          path: libs/SmartStore/build/reports/
+          destination: SmartStore
+      - store_test_results:
+          path: libs/SmartStore/build/outputs/androidTest-results/
+      - run:
+          name:  Run Danger
+          when: always
+          command: source .circleci/ci-helper.sh && runDangerLib
+
+  test-SmartSync:
+    <<: *defaults
+    environment:
+      - CURRENT_LIB: "SmartSync"
+    steps:
+      - *attach_workspace
+      - run: sleep 30
+      - run:
+          name:  Launch Emulator
+          command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
+          background: true
+      - run:
+          name:  Wait for Emulator to boot
+          command: source .circleci/ci-helper.sh && waitForAVD
+      - run:
+          name:  Run SmartSync Tests
+          halt_build_on_fail: false
+          command: ./gradlew :libs:SmartSync:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+          no_output_timeout: 900
+      - store_artifacts:
+          path: libs/SmartSync/build/reports/
+          destination: SmartSync
+      - store_test_results:
+          path: libs/SmartSync/build/outputs/androidTest-results/
+      - run:
+           name:  Run Danger
+           when: always
+           command: source .circleci/ci-helper.sh && runDangerLib
+
+  test-SalesforceHybrid:
+    <<: *defaults
+    environment:
+      - CURRENT_LIB: "SalesforceHybrid"
+    steps:
+      - *attach_workspace
+      - run: sleep 30
+      - run:
+          name:  Launch Emulator
+          command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
+          background: true
+      - run:
+          name:  Wait for Emulator to boot
+          command: source .circleci/ci-helper.sh && waitForAVD
+      - run:
+          name:  Run SalesforceHybrid Tests
+          halt_build_on_fail: false
+          command: ./gradlew :libs:SalesforceHybrid:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+          no_output_timeout: 900
+      - store_artifacts:
+          path: libs/SalesforceHybrid/build/reports/
+          destination: SalesforceHybrid
+      - store_test_results:
+          path: libs/SalesforceHybrid/build/outputs/androidTest-results/
+      - run:
+           name:  Run Danger
+           when: always
+           command: source .circleci/ci-helper.sh && runDangerLib
+
+  test-SalesforceReact:
+    <<: *defaults
+    environment:
+      - CURRENT_LIB: "SalesforceReact"
+    steps:
+      - *attach_workspace
+      - run:
+          name:  Build SalesforceReact
+          halt_build_on_fail: false
+          command: |
+            ./gradlew :libs:SalesforceReact:assembleDebug -p . --continue --no-daemon --profile --max-workers 2
+            ./gradlew :libs:SalesforceReact:assembleRelease -p . --continue --no-daemon --profile --max-workers 2
+
+  package:
+    <<: *defaults
+    steps:
+      - run:
+        name: Checkout SalesforceMobileSDK-Package
+        command: |
+          git clone git@github.com:forcedotcom/SalesforceMobileSDK-Package.git
+          cd SalesforceMobileSDK-Package
+          git checkout dev
+
+      - run:
+        name: Test forcedroid
+        when: always
+        command: ./test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native --test-production
+
+      - run:
+        name: Test sfdx
+        when: always
+        command: ./test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native --use-sfdx --test-production
+
+
+workflows:
+  version: 2
+
+  pr-build-and-test:
+    jobs:
+      - setup
+      - test-SalesforceAnalytics:
+          requires:
+            - setup
+      - test-SalesforceSDK:
+          requires:
+            - setup
+      - test-SmartStore:
+          requires:
+            - setup
+      - test-SmartSync:
+          requires:
+            - setup
+      - test-SalesforceHybrid:
+          requires:
+            - setup
+      - test-SalesforceReact:
+          requires:
+            - setup
+
+  nightly:
+    triggers:
+      - schedule:
+          cron: "20 11 * * *"
+          filters:
+            branches:
+              only:
+                - dev
+    jobs:
+      - setup
+      - test-SalesforceAnalytics:
+          requires:
+            - setup
+      - test-SalesforceSDK:
+          requires:
+            - setup
+      - test-SmartStore:
+          requires:
+            - setup
+      - test-SmartSync:
+          requires:
+            - setup
+      - test-SalesforceHybrid:
+          requires:
+            - setup
+      - test-SalesforceReact:
+          requires:
+            - setup
+
+  weekly:
+    triggers:
+      - schedule:
+          cron: "45 11 * * *"
+          filters:
+            branches:
+              only:
+                - dev
+    jobs:
+      - package
