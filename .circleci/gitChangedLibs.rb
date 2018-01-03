@@ -3,10 +3,10 @@ require 'set'
 
 libsTopoSorted = ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "SmartSync", "SalesforceHybrid", "SalesforceReact"]
 
-if ENV["CIRCLE_PULL_REQUEST"].eql?("true") {
+if not ENV["CIRCLE_PULL_REQUEST"].nil? {
   $GITPRAPI = "https://api.github.com/repos/%s/SalesforceMobileSDK-android/pulls/%s/files"
 
-  prFilesAPI = $GITPRAPI % [ENV["CIRCLE_PROJECT_USERNAME"], ENV["CIRCLE_PR_NUMBER"]]
+  prFilesAPI = $GITPRAPI % [ENV["CIRCLE_PR_USERNAME"], ENV["CIRCLE_PR_NUMBER"]]
   pullfiles = `#{"curl %s" % [prFilesAPI]}`
   prfiles = JSON.parse(pullfiles)
 
@@ -15,13 +15,13 @@ if ENV["CIRCLE_PULL_REQUEST"].eql?("true") {
     path = prfile["filename"]
     for lib in libsTopoSorted
       if path.include? lib
-        libsModified = libsModified.add(lib)
+        libsModified.add(lib)
       end
     end
   end
 
   # Print so the bash in the CircleCI yml can get the Libs to run
-  print libsToTest.join(",")
+  print libsModified.to_a.join(",")
 }
 else
   print libsTopoSorted.join(",")
