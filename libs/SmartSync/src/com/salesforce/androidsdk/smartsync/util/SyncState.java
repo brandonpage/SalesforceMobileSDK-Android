@@ -28,9 +28,11 @@ package com.salesforce.androidsdk.smartsync.util;
 
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -43,7 +45,8 @@ import org.json.JSONObject;
 public class SyncState {
 	// SmartStore
 	public static final String SYNCS_SOUP = "syncs_soup";
-	
+
+	public static final String SYNC_NAME = "name";
 	public static final String SYNC_TYPE = "type";
 	public static final String SYNC_TARGET = "target";
 	public static final String SYNC_OPTIONS = "options";
@@ -52,9 +55,12 @@ public class SyncState {
 	public static final String SYNC_PROGRESS = "progress";
 	public static final String SYNC_TOTAL_SIZE = "totalSize";
     public static final String SYNC_MAX_TIME_STAMP = "maxTimeStamp";
+	public static final String SYNC_START_TIME = "startTime";
+	public static final String SYNC_END_TIME = "endTime";
 
 	private long id;
 	private Type type;
+	private String name;
 	private SyncTarget target;
 	private SyncOptions options;
 	private String soupName;
@@ -62,6 +68,10 @@ public class SyncState {
 	private int progress;
 	private int totalSize;
     private long maxTimeStamp;
+
+	// Start and end time in milliseconds since 1970
+	private long startTime;
+	private long endTime;
 	
 	
 	/**
@@ -69,23 +79,46 @@ public class SyncState {
 	 * @param store
 	 */
 	public static void setupSyncsSoupIfNeeded(SmartStore store) {
-    	if (store.hasSoup(SYNCS_SOUP)) 
-    		return;
-    	
-    	final IndexSpec[] indexSpecs = {
-    			new IndexSpec(SYNC_TYPE, SmartStore.Type.string)
-    	};    	
-		store.registerSoup(SYNCS_SOUP, indexSpecs);
+    	if (store.hasSoup(SYNCS_SOUP) && store.getSoupIndexSpecs(SYNCS_SOUP).length == 2) {
+			return;
+		}
+
+		final IndexSpec[] indexSpecs = {
+			new IndexSpec(SYNC_TYPE, SmartStore.Type.string),
+			new IndexSpec(SYNC_NAME, SmartStore.Type.string)
+		};
+
+		// Syncs soup exists but doesn't have all the required indexes
+		if (store.hasSoup(SYNCS_SOUP)) {
+			try {
+				store.alterSoup(SYNCS_SOUP, indexSpecs, false);
+			}
+			catch (JSONException e) {
+				throw new SyncManager.SmartSyncException(e);
+			}
+		}
+		// Syncs soup does not exist
+		else {
+			store.registerSoup(SYNCS_SOUP, indexSpecs);
+		}
 	}
 	
 	/**
 	 * Create sync state in database for a sync down and return corresponding SyncState
+	 * NB: Throws exception if there is already a sync with the same name (when name is not null)
+	 *
+	 * @param store
+	 * @param target
+	 * @param options
+	 * @param soupName
+	 * @param name
 	 * @return
-	 * @throws JSONException 
+	 * @throws JSONException
 	 */
-	public static SyncState  createSyncDown(SmartStore store, SyncDownTarget target, SyncOptions options, String soupName) throws JSONException {
+	public static SyncState  createSyncDown(SmartStore store, SyncDownTarget target, SyncOptions options, String soupName, String name) throws JSONException {
     	JSONObject sync = new JSONObject();
     	sync.put(SYNC_TYPE, Type.syncDown);
+		if (name != null) sync.put(SYNC_NAME, name);
     	sync.put(SYNC_TARGET, target.asJSON());
         sync.put(SYNC_OPTIONS, options.asJSON());
     	sync.put(SYNC_SOUP_NAME, soupName);
@@ -93,20 +126,38 @@ public class SyncState {
     	sync.put(SYNC_PROGRESS, 0);
     	sync.put(SYNC_TOTAL_SIZE, -1);
         sync.put(SYNC_MAX_TIME_STAMP, -1);
+		sync.put(SYNC_START_TIME, 0);
+		sync.put(SYNC_END_TIME, 0);
+
+		if (name != null && hasSyncWithName(store, name)) {
+			throw new SyncManager.SmartSyncException("Failed to create sync down: there is already a sync with name:" + name);
+		}
 
     	sync = store.upsert(SYNCS_SOUP, sync);
+		if (sync == null) {
+			throw new SyncManager.SmartSyncException("Failed to create sync down");
+		}
+
     	return SyncState.fromJSON(sync);
 	}
 
 	
 	/**
 	 * Create sync state in database for a sync up and return corresponding SyncState
+	 * NB: Throws exception if there is already a sync with the same name (when name is not null)
+	 *
+	 * @param store
+	 * @param target
+	 * @param options
+	 * @param soupName
+	 * @param name
 	 * @return
-	 * @throws JSONException 
+	 * @throws JSONException
 	 */
-	public static SyncState createSyncUp(SmartStore store, SyncUpTarget target, SyncOptions options, String soupName) throws JSONException {
+	public static SyncState createSyncUp(SmartStore store, SyncUpTarget target, SyncOptions options, String soupName, String name) throws JSONException {
     	JSONObject sync = new JSONObject();
     	sync.put(SYNC_TYPE, Type.syncUp);
+		if (name != null) sync.put(SYNC_NAME, name);
         sync.put(SYNC_TARGET, target.asJSON());
     	sync.put(SYNC_SOUP_NAME, soupName);
     	sync.put(SYNC_OPTIONS, options.asJSON());
@@ -114,8 +165,17 @@ public class SyncState {
     	sync.put(SYNC_PROGRESS, 0);
     	sync.put(SYNC_TOTAL_SIZE, -1);
         sync.put(SYNC_MAX_TIME_STAMP, -1);
+		sync.put(SYNC_START_TIME, 0);
+		sync.put(SYNC_END_TIME, 0);
+
+		if (name != null && hasSyncWithName(store, name)) {
+			throw new SyncManager.SmartSyncException("Failed to create sync up: there is already a sync with name:" + name);
+		}
 
     	sync = store.upsert(SYNCS_SOUP, sync);
+		if (sync == null) {
+			throw new SyncManager.SmartSyncException("Failed to create sync up");
+		}
     	return SyncState.fromJSON(sync);
 	}
 	
@@ -129,6 +189,7 @@ public class SyncState {
 		SyncState state = new SyncState();
 		state.id = sync.getLong(SmartStore.SOUP_ENTRY_ID);
 		state.type = Type.valueOf(sync.getString(SYNC_TYPE));
+		state.name = JSONObjectHelper.optString(sync, SYNC_NAME);
         final JSONObject jsonTarget = sync.optJSONObject(SYNC_TARGET);
         state.target = (state.type == Type.syncDown ? SyncDownTarget.fromJSON(jsonTarget) : SyncUpTarget.fromJSON(jsonTarget));
 		state.options = SyncOptions.fromJSON(sync.optJSONObject(SYNC_OPTIONS));
@@ -137,11 +198,14 @@ public class SyncState {
 		state.progress = sync.getInt(SYNC_PROGRESS);
 		state.totalSize = sync.getInt(SYNC_TOTAL_SIZE);
         state.maxTimeStamp = sync.optLong(SYNC_MAX_TIME_STAMP, -1);
+		state.startTime = sync.optLong(SYNC_START_TIME, 0);
+		state.endTime = sync.optLong(SYNC_START_TIME, 0);
 		return state;
 	}
 	
 	/**
-	 * Build SyncState from store sync given by id
+	 * Get sync state of sync given by id
+	 *
 	 * @param store
 	 * @param id
 	 * @return
@@ -155,7 +219,72 @@ public class SyncState {
     	
     	return SyncState.fromJSON(syncs.getJSONObject(0));
 	}
-	
+
+	/**
+	 * Get sync state of sync given by name
+	 *
+	 * @param store
+	 * @param name
+	 * @return
+	 * @throws JSONException
+	 */
+	public static SyncState byName(SmartStore store, String name) throws JSONException {
+		if (name == null) {
+			throw new SyncManager.SmartSyncException("name must not be null");
+		}
+
+		long syncId = store.lookupSoupEntryId(SYNCS_SOUP, SYNC_NAME, name);
+
+		if (syncId < 0)
+			return null;
+
+		return byId(store, syncId);
+	}
+
+	/**
+	 * Delete row for sync given by id
+	 * @param store
+	 * @param id
+	 */
+	public static void deleteSync(SmartStore store, long id) {
+		store.delete(SYNCS_SOUP, id);
+	}
+
+	/**
+	 * Delete row for sync given by name
+	 *  @param store
+	 * @param name
+	 */
+	public static void deleteSync(SmartStore store, String name) {
+		if (name == null) {
+			throw new SyncManager.SmartSyncException("name must not be null");
+		}
+
+		long syncId = store.lookupSoupEntryId(SYNCS_SOUP, SYNC_NAME, name);
+
+		if (syncId < 0)
+			return;
+
+		deleteSync(store, syncId);
+	}
+
+	/**
+	 * Return true if there is a sync with the given name
+	 *
+	 * @param store
+	 * @param name
+	 * @return
+	 */
+	public static boolean hasSyncWithName(SmartStore store, String name) {
+		if (name == null) {
+			throw new SyncManager.SmartSyncException("name must not be null");
+		}
+
+		long syncId = store.lookupSoupEntryId(SYNCS_SOUP, SYNC_NAME, name);
+
+		return syncId != -1;
+	}
+
 	/**
 	 * @return json representation of sync
 	 * @throws JSONException
@@ -164,6 +293,7 @@ public class SyncState {
 		JSONObject sync = new JSONObject();
 		sync.put(SmartStore.SOUP_ENTRY_ID, id);
 		sync.put(SYNC_TYPE, type.name());
+		if (name != null) sync.put(SYNC_NAME, name);
 		if (target != null) sync.put(SYNC_TARGET, target.asJSON());
 		if (options != null) sync.put(SYNC_OPTIONS, options.asJSON());
 		sync.put(SYNC_SOUP_NAME, soupName);
@@ -171,6 +301,8 @@ public class SyncState {
 		sync.put(SYNC_PROGRESS, progress);
 		sync.put(SYNC_TOTAL_SIZE, totalSize);
         sync.put(SYNC_MAX_TIME_STAMP, maxTimeStamp);
+		sync.put(SYNC_START_TIME, startTime);
+		sync.put(SYNC_END_TIME, endTime);
 		return sync;
 	}
 	
@@ -180,7 +312,10 @@ public class SyncState {
 	 * @throws JSONException
 	 */
 	public void save(SmartStore store) throws JSONException {
-		store.update(SYNCS_SOUP, asJSON(), getId());
+		JSONObject sync = store.update(SYNCS_SOUP, asJSON(), getId());
+		if (sync == null) {
+			throw new SyncManager.SmartSyncException("Failed to save sync state");
+		}
 	}
 	
 	public long getId() {
@@ -223,7 +358,15 @@ public class SyncState {
         return maxTimeStamp;
     }
 
-    public void setMaxTimeStamp(long maxTimeStamp) {
+	public double getStartTime() {
+		return startTime;
+	}
+
+	public double getEndTime() {
+		return endTime;
+	}
+
+	public void setMaxTimeStamp(long maxTimeStamp) {
         this.maxTimeStamp = maxTimeStamp;
     }
 
@@ -236,6 +379,13 @@ public class SyncState {
 	}
 	
 	public void setStatus(Status status) {
+		if (this.status == Status.NEW && status == Status.RUNNING) {
+			this.startTime = System.currentTimeMillis();
+		}
+		if (this.status == Status.RUNNING && (status == Status.DONE || status == Status.FAILED)) {
+			this.endTime = System.currentTimeMillis();
+		}
+
 		this.status = status;
 	}
 	

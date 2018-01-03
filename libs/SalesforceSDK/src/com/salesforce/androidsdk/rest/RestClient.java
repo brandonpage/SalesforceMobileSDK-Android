@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -58,7 +59,6 @@ public class RestClient {
 	private static final String INSTANCE_URL = "instanceUrl";
 	private static final String LOGIN_URL = "loginUrl";
 	private static final String IDENTITY_URL = "identityUrl";
-	private static final String CLIENT_ID = "clientId";
 	private static final String ORG_ID = "orgId";
 	private static final String USER_ID = "userId";
 	private static final String REFRESH_TOKEN = "refreshToken";
@@ -67,14 +67,18 @@ public class RestClient {
 	private static final String COMMUNITY_URL = "communityUrl";
 	private static final String TAG = "RestClient";
 
-	private static Map<String, OkHttpClient.Builder> OK_CLIENT_BUILDERS;
-    private static Map<String, OkHttpClient> OK_CLIENTS;
+	private static Map<String, OAuthRefreshInterceptor> OAUTH_REFRESH_INTERCEPTORS = new HashMap<>();
+	private static Map<String, OkHttpClient.Builder> OK_CLIENT_BUILDERS = new HashMap<>();
+    private static Map<String, OkHttpClient> OK_CLIENTS = new HashMap<>();
+
+	private ClientInfo clientInfo;
     private HttpAccess httpAccessor;
+	private AuthTokenProvider authTokenProvider;
     private OAuthRefreshInterceptor oAuthRefreshInterceptor;
 	private OkHttpClient.Builder okHttpClientBuilder;
 	private OkHttpClient okHttpClient;
 
-	/** 
+	/**
 	 * AuthTokenProvider interface.
 	 * RestClient will call its authTokenProvider to refresh its authToken once it has expired. 
 	 */
@@ -132,29 +136,59 @@ public class RestClient {
      * @param authTokenProvider
 	 */
 	public RestClient(ClientInfo clientInfo, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider) {
-		this(httpAccessor, new OAuthRefreshInterceptor(clientInfo, authToken, authTokenProvider));
-	}
-
-	public RestClient(HttpAccess httpAccessor, OAuthRefreshInterceptor httpInterceptor) {
+		this.clientInfo = clientInfo;
         this.httpAccessor = httpAccessor;
-		this.oAuthRefreshInterceptor = httpInterceptor;
+		this.authTokenProvider = authTokenProvider;
+		setOAuthRefreshInterceptor(authToken);
 		setOkHttpClientBuilder();
 		setOkHttpClient(null);
 	}
 
 	/**
-	 * Clear cache of org-id/user-id to OkHttpClient.Builder
+	 * Remove cached OkHttpClient.Builder, OkHttpClient and OAuthRefreshInterceptor for the given user
 	 */
-	public static void clearOkClientBuildersCache() {
-		OK_CLIENT_BUILDERS = null;
+	public synchronized static void clearCaches(UserAccount userAccount) {
+		String orgId = userAccount != null ? userAccount.getOrgId() : null;
+		String userId = userAccount != null ? userAccount.getUserId() : null;
+		String cacheKey = computeCacheKey(orgId, userId);
+		OAUTH_REFRESH_INTERCEPTORS.remove(cacheKey);
+		OK_CLIENT_BUILDERS.remove(cacheKey);
+		OkHttpClient client = OK_CLIENTS.remove(cacheKey);
+		if (client != null) {
+			client.dispatcher().cancelAll();
+		}
 	}
 
-    /**
-     * Clear cache of org-id/user-id to OkHttpClient
-     */
-    public static void clearOkClientsCache() {
-        OK_CLIENTS = null;
+	/**
+	 * Clear caches of org-id/user-id to OkHttpClient.Builder, OkHttpClient and OAuthRefreshInterceptor
+	 */
+	public synchronized static void clearCaches() {
+		OAUTH_REFRESH_INTERCEPTORS.clear();
+		OK_CLIENT_BUILDERS.clear();
+		OK_CLIENTS.clear();
     }
+
+	private String getCacheKey() {
+		return computeCacheKey(clientInfo.orgId, clientInfo.userId);
+	}
+
+	private static String computeCacheKey(String orgId, String userId) {
+		return orgId != null && userId != null ? orgId + "-" + userId : "unauthenticated";
+	}
+
+	/**
+	 * Sets the OAuthRefreshInterceptor associated with this user account.
+	 */
+    private synchronized void setOAuthRefreshInterceptor(String authToken) {
+		final String cacheKey = getCacheKey();
+		OAuthRefreshInterceptor oAuthRefreshInterceptor = OAUTH_REFRESH_INTERCEPTORS.get(cacheKey);
+		// If none cached, create new one
+		if (oAuthRefreshInterceptor == null) {
+			oAuthRefreshInterceptor = new OAuthRefreshInterceptor(clientInfo, authToken, authTokenProvider);
+			OAUTH_REFRESH_INTERCEPTORS.put(cacheKey, oAuthRefreshInterceptor);
+		}
+		this.oAuthRefreshInterceptor = oAuthRefreshInterceptor;
+	}
 
 	/**
 	 * Sets the OkHttpclient.Builder associated with this user account. The OkHttpclient.Builder
@@ -162,18 +196,13 @@ public class RestClient {
 	 * switch occurs, to prevent multiple threads being spawned unnecessarily.
 	 */
 	private synchronized void setOkHttpClientBuilder() {
-		if (OK_CLIENT_BUILDERS == null) {
-			OK_CLIENT_BUILDERS = new HashMap<>();
-		}
-		final String uniqueId = this.oAuthRefreshInterceptor.clientInfo.buildUniqueId();
-		OkHttpClient.Builder okHttpClientBuilder = null;
-		if (uniqueId != null) {
-			okHttpClientBuilder = OK_CLIENT_BUILDERS.get(uniqueId);
-			if (okHttpClientBuilder == null) {
-				okHttpClientBuilder = httpAccessor.getOkHttpClientBuilder()
-						.addInterceptor(oAuthRefreshInterceptor);
-				OK_CLIENT_BUILDERS.put(uniqueId, okHttpClientBuilder);
-			}
+		final String cacheKey = getCacheKey();
+		OkHttpClient.Builder okHttpClientBuilder = OK_CLIENT_BUILDERS.get(cacheKey);
+		// If none cached, create new one
+		if (okHttpClientBuilder == null) {
+			okHttpClientBuilder = httpAccessor.getOkHttpClientBuilder()
+					.addInterceptor(getOAuthRefreshInterceptor());
+			OK_CLIENT_BUILDERS.put(getCacheKey(), okHttpClientBuilder);
 		}
 		this.okHttpClientBuilder = okHttpClientBuilder;
 	}
@@ -184,23 +213,20 @@ public class RestClient {
 	 * switch occurs, to prevent multiple threads being spawned unnecessarily.
 	 */
 	public synchronized void setOkHttpClient(OkHttpClient okHttpClient) {
-		if (OK_CLIENTS == null) {
-			OK_CLIENTS = new HashMap<>();
+		final String cacheKey = getCacheKey();
+
+		// If a valid client passed in, caches it.
+		if (okHttpClient != null) {
+			OK_CLIENTS.put(cacheKey, okHttpClient);
 		}
-		final String uniqueId = this.oAuthRefreshInterceptor.clientInfo.buildUniqueId();
-        if (uniqueId == null) {
-            return;
-        }
 
-        // If a valid client passed in, caches it. If not, creates a new one.
-        if (okHttpClient != null) {
-            OK_CLIENTS.put(uniqueId, okHttpClient);
-        } else if (!OK_CLIENTS.containsKey(uniqueId)) {
-            OK_CLIENTS.put(uniqueId, getOkHttpClientBuilder().build());
-        }
-
-        // Uses the cached client.
-		this.okHttpClient = OK_CLIENTS.get(uniqueId);
+		okHttpClient = OK_CLIENTS.get(cacheKey);
+		// If none cached, create new one
+		if (okHttpClient == null) {
+			okHttpClient = getOkHttpClientBuilder().build();
+			OK_CLIENTS.put(cacheKey, okHttpClient);
+		}
+		this.okHttpClient = okHttpClient;
 	}
 
 	/**
@@ -208,7 +234,7 @@ public class RestClient {
 	 * @param clientInfo The new client info to set
 	 */
 	public void setClientInfo(final ClientInfo clientInfo) {
-		oAuthRefreshInterceptor.setClientInfo(clientInfo);
+		getOAuthRefreshInterceptor().setClientInfo(clientInfo);
 	}
 
 	/**
@@ -221,7 +247,6 @@ public class RestClient {
 		data.put(REFRESH_TOKEN, getRefreshToken());
 		data.put(USER_ID, clientInfo.userId);
 		data.put(ORG_ID, clientInfo.orgId);
-		data.put(CLIENT_ID, clientInfo.clientId);
 		data.put(LOGIN_URL, clientInfo.loginUrl.toString());
 		data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
 		data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
@@ -263,6 +288,13 @@ public class RestClient {
 	 */
 	public ClientInfo getClientInfo() {
 		return oAuthRefreshInterceptor.clientInfo;
+	}
+
+	/**
+	 * @return underlying OAuthRefreshInterceptor
+	 */
+	public OAuthRefreshInterceptor getOAuthRefreshInterceptor() {
+		return oAuthRefreshInterceptor;
 	}
 
 	/**
@@ -363,7 +395,6 @@ public class RestClient {
 	 */
 	public static class ClientInfo {
 
-		public final String clientId;
 		public final URI instanceUrl;
 		public final URI loginUrl;
 		public final URI identityUrl;
@@ -384,7 +415,6 @@ public class RestClient {
 		/**
 		 * Parameterized constructor.
 		 *
-		 * @param clientId Client ID.
 		 * @param instanceUrl Instance URL.
 		 * @param loginUrl Login URL.
 		 * @param identityUrl Identity URL.
@@ -402,12 +432,11 @@ public class RestClient {
          * @param thumbnailUrl Thumbnail URL.
          * @param additionalOauthValues Additional OAuth values.
 		 */
-		public ClientInfo(String clientId, URI instanceUrl, URI loginUrl,
+		public ClientInfo(URI instanceUrl, URI loginUrl,
 				URI identityUrl, String accountName, String username,
 				String userId, String orgId, String communityId, String communityUrl,
 				String firstName, String lastName, String displayName, String email,
 				String photoUrl, String thumbnailUrl, Map<String, String> additionalOauthValues) {
-			this.clientId = clientId;
 			this.instanceUrl = instanceUrl;
 			this.loginUrl = loginUrl;
 			this.identityUrl = identityUrl;
@@ -538,7 +567,7 @@ public class RestClient {
         public static final String NOUSER = "nouser";
 
         public UnauthenticatedClientInfo() {
-            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override
@@ -717,7 +746,7 @@ public class RestClient {
                 if (!clientInfo.instanceUrl.toString().equalsIgnoreCase(instanceUrl)) {
                     try {
                         // Create a new ClientInfo
-                        clientInfo = new ClientInfo(clientInfo.clientId, new URI(instanceUrl),
+                        clientInfo = new ClientInfo(new URI(instanceUrl),
                                 clientInfo.loginUrl, clientInfo.identityUrl,
                                 clientInfo.accountName, clientInfo.username,
                                 clientInfo.userId, clientInfo.orgId, clientInfo.communityId,
@@ -751,5 +780,4 @@ public class RestClient {
 			super(msg, cause);
 		}
 	}
-
 }
