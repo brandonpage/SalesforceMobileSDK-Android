@@ -22,26 +22,27 @@ function getAndSetLibsToTest {
 function startAVD {
     # This indicates a nightly build and what API version to test
     if [ -z "$AVD" ]; then
-        emulator64-arm -avd "$AVD" -no-audio -no-window -no-boot-anim -gpu off
-    else
         if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
             emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
         else
             echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
         fi
+    else
+        emulator64-arm -avd "$AVD" -no-audio -no-window -no-boot-anim -gpu off
     fi
 }
 
 function waitForAVD {
+    set -e
+
     if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
         local bootanim=""
         export PATH=$(dirname $(dirname $(which android)))/platform-tools:$PATH
         until [[ "$bootanim" =~ "stopped" ]]; do
-            sleep 10
+            sleep 5
             bootanim=$(adb -e shell getprop init.svc.bootanim 2>&1)
             echo "emulator status=$bootanim"
         done
-        sleep 30
         echo "Device Booted"
     else
         echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."

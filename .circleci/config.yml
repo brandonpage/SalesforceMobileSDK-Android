@@ -22,7 +22,6 @@ aliases:
   - &Lib-Run-Base
     halt_build_on_fail: false
     no_output_timeout: 900
-    when: always
 
   - &Run-Unit-Tests-PR
     <<: *Lib-Run-Base
@@ -32,26 +31,31 @@ aliases:
     <<: *Lib-Run-Base
     name: Run SalesforceAnalytics
     command: ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+    when: always
 
   - &Run-SalesforceSDK
     <<: *Lib-Run-Base
     name: Run SalesforceSDK
     command: ./gradlew :libs:SalesforceSDK:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+    when: always
 
   - &Run-SmartStore
     <<: *Lib-Run-Base
     name: Run SmartStore
     command: ./gradlew :libs:SmartStore:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+    when: always
 
   - &Run-SmartSync
     <<: *Lib-Run-Base
     name: Run SmartSync
     command: ./gradlew :libs:SmartSync:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+    when: always
 
   - &Run-SalesforceHybrid
     <<: *Lib-Run-Base
     name: Run SalesforceHybird
     command: ./gradlew :libs:SalesforceHybrid:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+    when: always
 
   - &Build-SalesforceReact
     <<: *Lib-Run-Base
@@ -59,6 +63,7 @@ aliases:
     command: |
       ./gradlew :libs:SalesforceReact:assembleDebug -p . --continue --no-daemon --profile --max-workers 2
       ./gradlew :libs:SalesforceReact:assembleRelease -p . --continue --no-daemon --profile --max-workers 2
+    when: always
 
 
 defaults: &defaults
@@ -235,6 +240,8 @@ jobs:
       - AVD: "test23"
     steps:
       - *attach_workspace
+      - checkout
+      - run: git checkout nightly_test
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-SalesforceAnalytics
@@ -275,6 +282,8 @@ jobs:
       - AVD: "test24"
     steps:
       - *attach_workspace
+      - checkout
+      - run: git checkout nightly_test
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-SalesforceAnalytics
@@ -315,6 +324,8 @@ jobs:
       - AVD: "test25"
     steps:
       - *attach_workspace
+      - checkout
+      - run: git checkout nightly_test
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-SalesforceAnalytics
@@ -355,7 +366,23 @@ jobs:
       - run:
           name: Checkout SalesforceMobileSDK-Package
           command:  |
-            echo "yes" | git clone git@github.com:forcedotcom/SalesforceMobileSDK-Package.git
+            mkdir -p ~/.ssh
+
+            echo 'github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==
+            bitbucket.org ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAubiN81eDcafrgMeLzaFPsw2kNvEcqTKl/VqLat/MaB33pZy0y3rJZtnqwR2qOOvbwKZYKiEO1O6VqNEBxKvJJelCq0dTXWT5pbO2gDXC6h6QDXCaHo6pOHGPUy+YBaGQRGuSusMEASYiWunYN0vCAI8QaXnWMXNMdFP3jHAJH0eDsoiGnLPBlBp4TNm6rYI74nMzgz3B9IikW4WVK+dc8KZJZWYjAuORU3jc1c/NPskD2ASinf8v3xnfXeukU0sJ5N6m5E8VLjObPEO+mN2t/FZTMZLiFqPWc/ALSqnMnnhwrNi2rbfg/rd/IpL8Le3pSBne8+seeFVBoGqzHM9yXw==
+            ' >> ~/.ssh/known_hosts
+
+            (umask 077; touch ~/.ssh/id_rsa)
+            chmod 0600 ~/.ssh/id_rsa
+            (cat <<EOF > ~/.ssh/id_rsa
+            $CHECKOUT_KEY
+            EOF
+            )
+
+            # use git+ssh instead of https
+            git config --global url."ssh://git@github.com".insteadOf "https://github.com" || true
+
+            git clone git@github.com:forcedotcom/SalesforceMobileSDK-Package.git
             cd SalesforceMobileSDK-Package
             git checkout dev
             node ./install.js
@@ -363,12 +390,12 @@ jobs:
       - run:
           name: Test forcedroid
           when: always
-          command: ./test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native
+          command: ./SalesforceMobileSDK-Package/test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native
 
       - run:
           name: Test sfdx
           when: always
-          command: ./test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native --use-sfdx
+          command: ./SalesforceMobileSDK-Package/test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native --use-sfdx
 
 
 #####################
