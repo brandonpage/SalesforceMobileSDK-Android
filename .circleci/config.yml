@@ -8,7 +8,6 @@ aliases:
     name:  Run Danger
     when: always
     command:  source .circleci/ci-helper.sh && runDanger
-    background: true
 
   - &Launch-Emulator
     name:  Launch Emulator
@@ -396,7 +395,11 @@ jobs:
       - run:
           name: Test forcedroid
           when: always
-          command: ./SalesforceMobileSDK-Package/test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native
+          command:  |
+            git --version
+            sudo apt-get install git=2.13
+            git --version
+            ./SalesforceMobileSDK-Package/test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native
 
       - run:
           name: Test sfdx
