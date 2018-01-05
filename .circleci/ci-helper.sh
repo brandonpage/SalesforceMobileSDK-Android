@@ -28,7 +28,7 @@ function startAVD {
             echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
         fi
     else
-        emulator64-arm -avd "$AVD" -no-audio -no-window -no-boot-anim -gpu off
+        emulator -avd "$AVD" -no-audio -no-window -no-boot-anim -gpu off
     fi
 }
 
@@ -43,6 +43,7 @@ function waitForAVD {
             bootanim=$(adb -e shell getprop init.svc.bootanim 2>&1)
             echo "emulator status=$bootanim"
         done
+        sleep 30
         echo "Device Booted"
     else
         echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
