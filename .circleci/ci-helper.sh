@@ -22,7 +22,7 @@ function startAVD {
     # This indicates a nightly build and what API version to test
     if [ -z "$AVD" ]; then
         if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
-            emulator64-arm -avd test22 -noaudio -no-window -accel on
+            emulator64-arm -avd circleci-android24 -noaudio -no-window -accel on
         else
             echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
         fi
@@ -32,23 +32,24 @@ function startAVD {
 }
 
 function waitForAVD {
-    set +e
+    circle-android wait-for-boot
+    #set +e
 
-    if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
-        local bootanim=""
-        export PATH=$(dirname $(dirname $(which android)))/platform-tools:$PATH
-        until [[ "$bootanim" =~ "stopped" ]]; do
-            sleep 5
-            bootanim=$(adb -e shell getprop init.svc.bootanim 2>&1)
-            echo "emulator status=$bootanim"
-        done
-        sleep 30
-        # unlock the emulator screen
-        adb shell input keyevent 82
-        echo "Device Booted"
-    else
-        echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
-    fi
+    #if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+    #    local bootanim=""
+    #    export PATH=$(dirname $(dirname $(which android)))/platform-tools:$PATH
+    #    until [[ "$bootanim" =~ "stopped" ]]; do
+    #        sleep 5
+    #        bootanim=$(adb -e shell getprop init.svc.bootanim 2>&1)
+    #        echo "emulator status=$bootanim"
+    #    done
+    #    sleep 30
+    #    # unlock the emulator screen
+    #    adb shell input keyevent 82
+    #    echo "Device Booted"
+    #else
+    #    echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
+    #fi
 }
 
 function runTests {
