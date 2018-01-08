@@ -133,6 +133,7 @@ jobs:
       - CURRENT_LIB: "SalesforceAnalytics"
     steps:
       #- *attach_workspace
+      - checkout
       - run: *Determine-Tests-to-Run
       - run: *envSetup
       - run: *Launch-Emulator
@@ -151,6 +152,7 @@ jobs:
       - CURRENT_LIB: "SalesforceSDK"
     steps:
       #- *attach_workspace
+      - checkout
       - run: *Determine-Tests-to-Run
       - run: *envSetup
       - run: *Launch-Emulator
@@ -187,6 +189,7 @@ jobs:
       - CURRENT_LIB: "SmartSync"
     steps:
       #- *attach_workspace
+      - checkout
       - run: *Determine-Tests-to-Run
       - run: *envSetup
       - run: *Launch-Emulator
@@ -205,6 +208,7 @@ jobs:
       - CURRENT_LIB: "SalesforceHybrid"
     steps:
       #- *attach_workspace
+      - checkout
       - run: *Determine-Tests-to-Run
       - run: *envSetup
       - run: *Launch-Emulator
@@ -223,6 +227,7 @@ jobs:
       - CURRENT_LIB: "SalesforceReact"
     steps:
       #- *attach_workspace
+      - checkout
       - run: *Determine-Tests-to-Run
       - run:
           name:  Build SalesforceReact
