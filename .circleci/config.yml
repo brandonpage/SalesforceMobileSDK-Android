@@ -1,4 +1,9 @@
 aliases:
+  - &envSetup
+    name: Setup Envionrment
+    shell: /bin/bash
+    command: source .circleci/ci-helper.sh && envSetup
+
   - &Determine-Tests-to-Run
     name: Determine Tests to Run
     shell: /bin/bash
@@ -68,7 +73,7 @@ aliases:
 defaults: &defaults
   working_directory: ~/SalesforceMobileSDK-Android
   docker:
-    - image: brandonpage/salesforce-mobilesdk-android-docker-primary:0.1.0
+    - image: circleci/android:api-27-node8-alpha
   environment:
     - TERM: "dumb"
     - ADB_INSTALL_TIMEOUT: 15
@@ -127,8 +132,9 @@ jobs:
     environment:
       - CURRENT_LIB: "SalesforceAnalytics"
     steps:
-      - *attach_workspace
+      #- *attach_workspace
       - run: *Determine-Tests-to-Run
+      - run: *envSetup
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-Unit-Tests-PR
@@ -144,8 +150,9 @@ jobs:
     environment:
       - CURRENT_LIB: "SalesforceSDK"
     steps:
-      - *attach_workspace
+      #- *attach_workspace
       - run: *Determine-Tests-to-Run
+      - run: *envSetup
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-Unit-Tests-PR
@@ -161,8 +168,9 @@ jobs:
     environment:
       - CURRENT_LIB: "SmartStore"
     steps:
-      - *attach_workspace
+      #- *attach_workspace
       - run: *Determine-Tests-to-Run
+      - run: *envSetup
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-Unit-Tests-PR
@@ -178,8 +186,9 @@ jobs:
     environment:
       - CURRENT_LIB: "SmartSync"
     steps:
-      - *attach_workspace
+      #- *attach_workspace
       - run: *Determine-Tests-to-Run
+      - run: *envSetup
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-Unit-Tests-PR
@@ -195,8 +204,9 @@ jobs:
     environment:
       - CURRENT_LIB: "SalesforceHybrid"
     steps:
-      - *attach_workspace
+      #- *attach_workspace
       - run: *Determine-Tests-to-Run
+      - run: *envSetup
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-Unit-Tests-PR
@@ -212,7 +222,7 @@ jobs:
     environment:
       - CURRENT_LIB: "SalesforceReact"
     steps:
-      - *attach_workspace
+      #- *attach_workspace
       - run: *Determine-Tests-to-Run
       - run:
           name:  Build SalesforceReact
@@ -289,23 +299,11 @@ workflows:
     jobs:
       - setup
       - test-SalesforceAnalytics:
-          requires:
-            - setup
       - test-SalesforceSDK:
-          requires:
-            - setup
       - test-SmartStore:
-          requires:
-            - setup
       - test-SmartSync:
-          requires:
-            - setup
       - test-SalesforceHybrid:
-          requires:
-            - setup
       - test-SalesforceReact:
-          requires:
-            - setup
 
  # Cron are on a timezone 8 hours ahead of PST
   nightly-build:
