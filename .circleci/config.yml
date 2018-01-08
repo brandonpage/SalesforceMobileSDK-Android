@@ -298,12 +298,12 @@ workflows:
   pr-build-and-test:
     jobs:
       - setup
-      - test-SalesforceAnalytics:
-      - test-SalesforceSDK:
-      - test-SmartStore:
-      - test-SmartSync:
-      - test-SalesforceHybrid:
-      - test-SalesforceReact:
+      - test-SalesforceAnalytics
+      - test-SalesforceSDK
+      - test-SmartStore
+      - test-SmartSync
+      - test-SalesforceHybrid
+      - test-SalesforceReact
 
  # Cron are on a timezone 8 hours ahead of PST
   nightly-build:
