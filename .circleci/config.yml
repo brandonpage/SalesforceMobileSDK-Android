@@ -69,10 +69,18 @@ aliases:
       ./gradlew :libs:SalesforceReact:assembleRelease -p . --continue --no-daemon --profile --max-workers 2
     when: always
 
-  - &restore-cache-keys
+  - &restore-gradle-cache
     keys:
       - gradle-cache-{{ checksum "build.gradle" }}
+      - gradle-cache- # used if checksum fails
+
+  - &restore-node-cache
+    keys:
       - node-cache-{{ checksum "package.json" }}
+      - node-cache- # used if checksum fails
+
+  - &restore-ruby-cache
+    keys:
       - ruby-cache
 
   - &save-gradle-cache
@@ -121,7 +129,9 @@ jobs:
     steps:
       - checkout
       - run: *Determine-Tests-to-Run
-      - restore_cache: *restore-cache-keys
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
       - run: *setup-env
       - save_cache: *save-gradle-cache
       - save_cache: *save-node-cache
@@ -253,7 +263,9 @@ jobs:
       - AVD: "test24"
     steps:
       - checkout
-      - restore_cache: *restore-cache-keys
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
       - run: *setup-env
       - save_cache: *save-gradle-cache
       - save_cache: *save-node-cache
@@ -296,9 +308,10 @@ jobs:
     <<: *defaults
     steps:
       - checkout
-      - restore_cache: *restore-cache-keys
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
       - run: *setup-env
-      - save_cache: *save-gradle-cache
       - save_cache: *save-node-cache
       - save_cache: *save-ruby-cache
       - run:
@@ -365,6 +378,7 @@ jobs:
       - store_artifacts:
           path: hybrid/HybridSampleApps/SmartSyncExplorerHybrid/build/outputs/apk/
           destination: hyrbid-apps
+      - save_cache: *save-gradle-cache
 
 
 #####################
@@ -402,7 +416,7 @@ workflows:
   nightly-test:
      triggers:
        - schedule:
-           cron: "00,30 * * * 1,2,3,4,5"
+           cron: "00 8 * * 1,2,3,4,5"
            filters:
              branches:
                only:
