@@ -122,7 +122,7 @@ jobs:
       - checkout
       - run: *Determine-Tests-to-Run
       - restore_cache: *restore-cache-keys
-      - *setup-env
+      - run: *setup-env
       - save_cache: *save-gradle-cache
       - save_cache: *save-node-cache
       - save_cache: *save-ruby-cache
@@ -254,7 +254,7 @@ jobs:
     steps:
       - checkout
       - restore_cache: *restore-cache-keys
-      - *setup-env
+      - run: *setup-env
       - save_cache: *save-gradle-cache
       - save_cache: *save-node-cache
       - save_cache: *save-ruby-cache
@@ -297,7 +297,7 @@ jobs:
     steps:
       - checkout
       - restore_cache: *restore-cache-keys
-      - *setup-env
+      - run: *setup-env
       - save_cache: *save-gradle-cache
       - save_cache: *save-node-cache
       - save_cache: *save-ruby-cache
