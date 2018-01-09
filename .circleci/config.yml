@@ -122,19 +122,7 @@ jobs:
       - checkout
       - run: *Determine-Tests-to-Run
       - restore_cache: *restore-cache-keys
-      #- *setup-env
-      - run:
-          name: Setup I Guess
-          when: always
-          command:  |
-            sudo apt-get install libqt5widgets5
-            sudo npm install -g shelljs@0.7.0
-            sudo npm install -g cordova
-            cordova telemetry off
-
-            ./install.sh
-            ./gradlew androidDependencies
-            ./gradlew dependencies
+      - *setup-env
       - save_cache: *save-gradle-cache
       - save_cache: *save-node-cache
       - save_cache: *save-ruby-cache
@@ -157,7 +145,6 @@ jobs:
     steps:
       - *attach_workspace
       - run: *Determine-Tests-to-Run
-      - run: *setup-env
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-Unit-Tests-PR
@@ -175,7 +162,6 @@ jobs:
     steps:
       - *attach_workspace
       - run: *Determine-Tests-to-Run
-      - run: *setup-env
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-Unit-Tests-PR
@@ -193,7 +179,6 @@ jobs:
     steps:
       - *attach_workspace
       - run: *Determine-Tests-to-Run
-      - run: *setup-env
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-Unit-Tests-PR
@@ -211,7 +196,6 @@ jobs:
     steps:
       - *attach_workspace
       - run: *Determine-Tests-to-Run
-      - run: *setup-env
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-Unit-Tests-PR
@@ -229,7 +213,6 @@ jobs:
     steps:
       - *attach_workspace
       - run: *Determine-Tests-to-Run
-      - run: *setup-env
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-Unit-Tests-PR

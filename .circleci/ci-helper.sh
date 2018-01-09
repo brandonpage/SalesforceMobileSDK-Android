@@ -2,14 +2,13 @@
 # inspired by https://github.com/Originate/guide/blob/master/android/guide/Continuous%20Integration.md
 
 function envSetup {
-    apt-get install libqt5widgets5
-    npm install -g shelljs@0.7.0
-    npm install -g cordova
+    sudo apt-get update
+    sudo apt-get install libqt5widgets5
+    sudo npm install -g shelljs@0.7.0
+    sudo npm install -g cordova
     cordova telemetry off
 
     ./install.sh
-    ./gradlew androidDependencies
-    ./gradlew dependencies
 }
 
 function printTestsToRun {
