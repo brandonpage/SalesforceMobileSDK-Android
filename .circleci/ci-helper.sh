@@ -2,21 +2,14 @@
 # inspired by https://github.com/Originate/guide/blob/master/android/guide/Continuous%20Integration.md
 
 function envSetup {
-    if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
-        sudo apt-get install libqt5widgets5
-        sudo npm install -g shelljs@0.7.0
-        sudo npm install -g cordova
-        cordova telemetry off
+    sudo apt-get install libqt5widgets5
+    sudo npm install -g shelljs@0.7.0
+    sudo npm install -g cordova
+    cordova telemetry off
 
-        sudo apt-get install ruby-full
-        sudo gem install bundler
-        sudo gem install danger
-        sudo gem install danger-junit
-        sudo gem install danger-android_lint
-
-        echo "y" | sdkmanager "system-images;android-22;default;armeabi-v7a"
-        echo "no" | avdmanager create avd -n test22 -k "system-images;android-22;default;armeabi-v7a"
-    fi
+    ./install.sh
+    ./gradlew androidDependencies
+    ./gradlew dependencies
 }
 
 function printTestsToRun {
@@ -39,11 +32,15 @@ function startAVD {
     # This indicates a nightly build and what API version to test
     if [ -z "$AVD" ]; then
         if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+            echo "y" | sdkmanager "system-images;android-22;default;armeabi-v7a"
+            echo "no" | avdmanager create avd -n test22 -k "system-images;android-22;default;armeabi-v7a"
             emulator64-arm -avd test22 -noaudio -no-window -accel on
         else
             echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
         fi
     else
+        echo "y" | sdkmanager "system-images;android-24;default;arm64-v8a"
+        echo "no" | avdmanager create avd -n test24 -k "system-images;android-24;default;arm64-v8a"
         emulator -avd "$AVD" -no-audio -no-window -accel on
     fi
 }
@@ -77,7 +74,13 @@ function runTests {
 }
 
 function runDanger {
-    if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+    if [ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+        sudo gem install bundler
+        sudo gem install danger
+        sudo gem install danger-junit
+        sudo gem install danger-android_lint
+        sudo gem install danger-jacoco
+
         if [ -z "${CURRENT_LIB}" ]; then
             DANGER_GITHUB_API_TOKEN="c21349d8a97e1bf9cdd9""301fd949a83db862216b" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
         else
