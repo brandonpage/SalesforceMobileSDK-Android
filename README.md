@@ -1,5 +1,5 @@
 
-[![CircleCI](https://circleci.com/gh/forcedotcom/SalesforceMobileSDK-Android/tree/dev.svg?style=svg)](https://circleci.com/gh/forcedotcom/workflows/SalesforceMobileSDK-Android/tree/dev)
+[![CircleCI](https://circleci.com/gh/brandonpage/SalesforceMobileSDK-Android/tree/ci-experimental.svg?style=svg)](https://circleci.com/gh/brandonpage/workflows/SalesforceMobileSDK-Android/tree/ci-experimental)
 
 # Salesforce.com Mobile SDK for Android
 
