@@ -3,9 +3,11 @@
 
 function printTestsToRun {
     if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+
         echo "Not a PR.  Run everything"
     else
-        getAndSetLibsToTest
+        LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
+        echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
         if [[ ! -z ${LIBS_TO_TEST} ]]; then
             echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
         else
@@ -14,21 +16,18 @@ function printTestsToRun {
     fi
 }
 
-function getAndSetLibsToTest {
-    LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
-    echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
-}
-
 function startAVD {
+    export LD_LIBRARY_PATH=${ANDROID_HOME}/emulator/lib64:${ANDROID_HOME}/emulator/lib64/qt/lib
+
     # This indicates a nightly build and what API version to test
     if [ -z "$AVD" ]; then
         if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
-            emulator64-arm -avd test22 -no-audio -no-window
+            emulator64-arm -avd test22 -noaudio -no-window -accel on
         else
             echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
         fi
     else
-        emulator -avd "$AVD" -no-audio -no-window
+        emulator -avd "$AVD" -no-audio -no-window -accel on
     fi
 }
 
@@ -44,6 +43,8 @@ function waitForAVD {
             echo "emulator status=$bootanim"
         done
         sleep 30
+        # unlock the emulator screen
+        adb shell input keyevent 82
         echo "Device Booted"
     else
         echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
