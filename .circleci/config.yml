@@ -1,5 +1,5 @@
 aliases:
-  - &envSetup
+  - &setup-env
     name: Setup Envionrment
     shell: /bin/bash
     command: source .circleci/ci-helper.sh && envSetup
@@ -91,7 +91,6 @@ aliases:
       - "/opt/circleci/.rvm/gems"
 
 
-
 defaults: &defaults
   working_directory: ~/SalesforceMobileSDK-Android
   docker:
@@ -146,7 +145,7 @@ jobs:
     steps:
       - *attach_workspace
       - run: *Determine-Tests-to-Run
-      - run: *envSetup
+      - run: *setup-env
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-Unit-Tests-PR
@@ -164,7 +163,7 @@ jobs:
     steps:
       - *attach_workspace
       - run: *Determine-Tests-to-Run
-      - run: *envSetup
+      - run: *setup-env
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-Unit-Tests-PR
@@ -182,7 +181,7 @@ jobs:
     steps:
       - *attach_workspace
       - run: *Determine-Tests-to-Run
-      - run: *envSetup
+      - run: *setup-env
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-Unit-Tests-PR
@@ -200,7 +199,7 @@ jobs:
     steps:
       - *attach_workspace
       - run: *Determine-Tests-to-Run
-      - run: *envSetup
+      - run: *setup-env
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-Unit-Tests-PR
@@ -218,7 +217,7 @@ jobs:
     steps:
       - *attach_workspace
       - run: *Determine-Tests-to-Run
-      - run: *envSetup
+      - run: *setup-env
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-Unit-Tests-PR
@@ -408,7 +407,7 @@ workflows:
   nightly-test:
      triggers:
        - schedule:
-           cron: "15,45 * * * 1,2,3,4,5"
+           cron: "00,30 * * * 1,2,3,4,5"
            filters:
              branches:
                only:
