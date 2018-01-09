@@ -74,11 +74,11 @@ function runTests {
 
 function runDanger {
     if [ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
-        sudo gem install bundler
-        sudo gem install danger
-        sudo gem install danger-junit
-        sudo gem install danger-android_lint
-        sudo gem install danger-jacoco
+        gem install bundler
+        gem install danger
+        gem install danger-junit
+        gem install danger-android_lint
+        gem install danger-jacoco
 
         if [ -z "${CURRENT_LIB}" ]; then
             DANGER_GITHUB_API_TOKEN="c21349d8a97e1bf9cdd9""301fd949a83db862216b" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
