@@ -9,6 +9,7 @@ function envSetup {
     cordova telemetry off
 
     ./install.sh
+    ./gradlew assembleDebug
 
     gem install bundler
     gem install danger
@@ -72,7 +73,11 @@ function waitForAVD {
 
 function runTests {
     if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
-        ./gradlew :libs:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2 --stacktrace
+        if [[ "${CURRENT_LIB}" == "SalesforceReact" ]]; then
+            ./gradlew :libs:SalesforceReact:assemble
+        else
+            ./gradlew :libs:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2 --stacktrace
+        fi
     else
         echo "No need to run ${CURRENT_LIB} tests for this PR."
     fi
