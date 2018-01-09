@@ -9,7 +9,6 @@ function envSetup {
     cordova telemetry off
 
     ./install.sh
-    ./gradlew assembleDebug
 
     gem install bundler
     gem install danger

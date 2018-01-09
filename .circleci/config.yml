@@ -69,6 +69,17 @@ aliases:
       ./gradlew :libs:SalesforceReact:assembleRelease -p . --continue --no-daemon --profile --max-workers 2
     when: always
 
+  - &compile-libraries
+    name: Build Libraries
+    when: always
+    command:  |
+      ./gradlew :libs:SalesforceAnalytics:assemble
+      ./gradlew :libs:SalesforceSDK:assemble
+      ./gradlew :libs:SmartStore:assemble
+      ./gradlew :libs:SmartSync:assemble
+      ./gradlew :libs:SalesforceHybrid:assemble
+      ./gradlew :libs:SalesforceReact:assemble
+
   - &restore-gradle-cache
     keys:
       - gradle-cache-{{ checksum "build.gradle" }}
@@ -133,14 +144,11 @@ jobs:
       - restore_cache: *restore-node-cache
       - restore_cache: *restore-ruby-cache
       - run: *setup-env
+      - run: *compile-libraries
       - save_cache: *save-gradle-cache
       - save_cache: *save-node-cache
       - save_cache: *save-ruby-cache
       - run: *Run-Danger
-      - run:
-          name: Run Android Lint
-          when: always
-          command:  ./gradlew lint
       - persist_to_workspace:
           # Must be an absolute path, or relative path from working_directory
           root: .
@@ -268,7 +276,7 @@ jobs:
       - run: *Run-SalesforceSDK
       - run: *Run-SmartStore
       - run: *Run-SmartSync
-      - run: *Run-SalesforceHybrid
+      #- run: *Run-SalesforceHybrid
       - run: *Build-SalesforceReact
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/reports/
@@ -306,16 +314,7 @@ jobs:
       - run: *setup-env
       - save_cache: *save-node-cache
       - save_cache: *save-ruby-cache
-      - run:
-          name: Build Libraries
-          when: always
-          command:  |
-            ./gradlew :libs:SalesforceAnalytics:assemble
-            ./gradlew :libs:SalesforceSDK:assemble
-            ./gradlew :libs:SmartStore:assemble
-            ./gradlew :libs:SmartSync:assemble
-            ./gradlew :libs:SalesforceHybrid:assemble
-            ./gradlew :libs:SalesforceReact:assemble
+      - run: *compile-libraries
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/outputs/aar/
           destination: Libraries
