@@ -9,7 +9,7 @@ function envSetup {
     cordova telemetry off
 
     ./install.sh
-    ./gradlew androidDependencies
+    ./gradlew androidDependencies -PdisablePreDex
 
     gem install bundler
     gem install danger
@@ -77,9 +77,9 @@ function runTests {
             ./gradlew :libs:SalesforceReact:assemble
         else
             if [[ "${CURRENT_LIB}" == "RestExplorer" ]]; then
-                ./gradlew :native:NativeSampleApps:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --stacktrace connectedAndroidTest
+                ./gradlew :native:NativeSampleApps:${CURRENT_LIB}:connectedAndroidTest -PdisablePreDex --continue --no-daemon --stacktrace
             else
-                ./gradlew :libs:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --stacktrace connectedAndroidTest
+                ./gradlew :libs:${CURRENT_LIB}:connectedAndroidTest -PdisablePreDex --continue --no-daemon --stacktrace
             fi
         fi
     else
