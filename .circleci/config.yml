@@ -361,6 +361,10 @@ jobs:
           destination: RestExplorer
       - store_test_results:
           path: libs/SalesforceHybrid/build/outputs/androidTest-results/
+      - run:
+          name: Upload to CodeCov
+          command: bash <(curl -s https://codecov.io/bash)
+          when: always
 
   generate-artifacts:
     <<: *defaults
@@ -467,11 +471,11 @@ workflows:
   nightly-test:
      triggers:
        - schedule:
-           cron: "00 8 * * 2,3,4,5,6"
+           cron: "00 8, 16, 20 * * 2,3,4,5,6"
            filters:
              branches:
                only:
-                 - dev
+                 - test_codecov
      jobs:
         - nightly-test-API24
         - generate-artifacts

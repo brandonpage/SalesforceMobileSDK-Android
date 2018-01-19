@@ -1,5 +1,6 @@
 
 [![CircleCI](https://circleci.com/gh/forcedotcom/SalesforceMobileSDK-Android/tree/dev.svg?style=svg)](https://circleci.com/gh/forcedotcom/workflows/SalesforceMobileSDK-Android/tree/dev)
+[![codecov](https://codecov.io/gh/brandonpage/SalesforceMobileSDK-Android/branch/test_codecov/graph/badge.svg)](https://codecov.io/gh/brandonpage/SalesforceMobileSDK-Android)
 
 # Salesforce.com Mobile SDK for Android
 
