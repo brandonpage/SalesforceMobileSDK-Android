@@ -137,7 +137,7 @@ defaults: &defaults
     - TERM: "dumb"
     - ADB_INSTALL_TIMEOUT: 15
     - _JAVA_OPTIONS: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
-    - GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs="-XX:+HeapDumpOnOutOfMemoryError"'
+    - GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs="-XX:+HeapDumpOnOutOfMemoryError" -Dorg.gradle.jvmargs="-Xmx3072'
     - ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
     - BUILD_THREADS: 2
 
@@ -194,6 +194,10 @@ jobs:
       - store_test_results:
           path: libs/SalesforceAnalytics/build/outputs/androidTest-results/
       - run: *run-danger
+      - run:
+          name: Upload to CodeCov
+          command: bash <(curl -s https://codecov.io/bash)
+          when: always
 
   test-SalesforceSDK:
     <<: *defaults
@@ -214,6 +218,10 @@ jobs:
       - store_test_results:
           path: libs/SalesforceSDK/build/outputs/androidTest-results/
       - run: *run-danger
+      - run:
+          name: Upload to CodeCov
+          command: bash <(curl -s https://codecov.io/bash)
+          when: always
 
   test-SmartStore:
     <<: *defaults
@@ -234,6 +242,10 @@ jobs:
       - store_test_results:
           path: libs/SmartStore/build/outputs/androidTest-results/
       - run: *run-danger
+      - run:
+          name: Upload to CodeCov
+          command: bash <(curl -s https://codecov.io/bash)
+          when: always
 
   test-SmartSync:
     <<: *defaults
@@ -254,6 +266,10 @@ jobs:
       - store_test_results:
           path: libs/SmartSync/build/outputs/androidTest-results/
       - run: *run-danger
+      - run:
+          name: Upload to CodeCov
+          command: bash <(curl -s https://codecov.io/bash)
+          when: always
 
   test-SalesforceHybrid:
     <<: *defaults
@@ -274,6 +290,10 @@ jobs:
       - store_test_results:
           path: libs/SalesforceHybrid/build/outputs/androidTest-results/
       - run: *run-danger
+      - run:
+          name: Upload to CodeCov
+          command: bash <(curl -s https://codecov.io/bash)
+          when: always
 
   test-RestExplorer:
     <<: *defaults
@@ -294,6 +314,11 @@ jobs:
       - store_test_results:
           path: native/NativeSampleApps/RestExplorer/build/outputs/androidTest-results/
       - run: *run-danger
+      - run:
+          name: Upload to CodeCov
+          command: bash <(curl -s https://codecov.io/bash)
+          when: always
+
 
   test-SalesforceReact:
     <<: *defaults
@@ -471,7 +496,7 @@ workflows:
   nightly-test:
      triggers:
        - schedule:
-           cron: "00 * * * 2,3,4,5,6"
+           cron: "30 * * * 2,3,4,5,6"
            filters:
              branches:
                only:
