@@ -134,6 +134,7 @@ defaults: &defaults
   docker:
     - image: circleci/android:api-27-node8-alpha
   environment:
+    - MAVEN_OPTS: "-Xms256m -Xmx1024m"
     - TERM: "dumb"
     - ADB_INSTALL_TIMEOUT: 15
     - _JAVA_OPTIONS: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
