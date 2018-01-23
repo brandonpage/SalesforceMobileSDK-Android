@@ -500,7 +500,7 @@ workflows:
            filters:
              branches:
                only:
-                 - test_codecov
+                 - test_mem
      jobs:
         - nightly-test-API24
         - generate-artifacts
