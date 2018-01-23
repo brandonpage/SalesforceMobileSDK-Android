@@ -489,7 +489,7 @@ workflows:
 #            - setup
 #      - test-SalesforceReact:
 #          requires:
-3            - setup
+#            - setup
 
  # Cron are on a timezone 8 hours ahead of PST
  # Nightly run is set for midnight Monday - Friday
