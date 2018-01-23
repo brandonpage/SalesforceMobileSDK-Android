@@ -137,7 +137,7 @@ defaults: &defaults
     - MAVEN_OPTS: "-Xms256m -Xmx1024m"
     - TERM: "dumb"
     - ADB_INSTALL_TIMEOUT: 15
-    - _JAVA_OPTIONS: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
+ #   - _JAVA_OPTIONS: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
     - GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs="-XX:+HeapDumpOnOutOfMemoryError" -Dorg.gradle.jvmargs="-Xmx2048'
     - ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
     - BUILD_THREADS: 2
