@@ -134,11 +134,10 @@ defaults: &defaults
   docker:
     - image: circleci/android:api-27-node8-alpha
   environment:
-    - MAVEN_OPTS: "-Xms256m -Xmx1024m"
     - TERM: "dumb"
     - ADB_INSTALL_TIMEOUT: 15
     - _JAVA_OPTIONS: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
- #   - GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs="-XX:+HeapDumpOnOutOfMemoryError" -Dorg.gradle.jvmargs="-Xmx2048'
+    - GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs="-XX:+HeapDumpOnOutOfMemoryError"'
     - ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
     - BUILD_THREADS: 2
 
@@ -343,12 +342,12 @@ jobs:
       - AVD: "test24"
     steps:
       - checkout
+      - run: *launch-emulator
       - restore_cache: *restore-gradle-cache
       - restore_cache: *restore-node-cache
       - run: *setup-env
       - save_cache: *save-node-cache
       - save_cache: *save-ruby-cache
-      - run: *launch-emulator
       - run: *android-lint
       - run: *wait-for-emulator
       - run: *test-salesforce-analytics
@@ -467,41 +466,41 @@ jobs:
 workflows:
   version: 2
 
-  pr-test:
-    jobs:
-      - setup
-      - test-SalesforceAnalytics:
-          requires:
-            - setup
-      - test-SalesforceSDK:
-          requires:
-            - setup
-      - test-SmartStore:
-          requires:
-            - setup
-      - test-SmartSync:
-          requires:
-            - setup
-      - test-SalesforceHybrid:
-          requires:
-            - setup
-      - test-RestExplorer:
-          requires:
-            - setup
-      - test-SalesforceReact:
-          requires:
-            - setup
+#  pr-test:
+#    jobs:
+#      - setup
+#      - test-SalesforceAnalytics:
+#          requires:
+#            - setup
+#      - test-SalesforceSDK:
+#          requires:
+#            - setup
+#      - test-SmartStore:
+#          requires:
+#            - setup
+#      - test-SmartSync:
+#          requires:
+#            - setup
+#      - test-SalesforceHybrid:
+#          requires:
+#            - setup
+#      - test-RestExplorer:
+#          requires:
+#            - setup
+#      - test-SalesforceReact:
+#          requires:
+3            - setup
 
  # Cron are on a timezone 8 hours ahead of PST
  # Nightly run is set for midnight Monday - Friday
   nightly-test:
      triggers:
        - schedule:
-           cron: "00 16,17,18,19,20 * * 2,3,4,5,6"
+           cron: "00 16,17,18,19,20,21,22,23,24 * * 2,3,4,5,6"
            filters:
              branches:
                only:
                  - test_mem
      jobs:
         - nightly-test-API24
-        - generate-artifacts
+        #- generate-artifacts
