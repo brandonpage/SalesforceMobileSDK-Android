@@ -494,13 +494,13 @@ workflows:
  # Cron are on a timezone 8 hours ahead of PST
  # Nightly run is set for midnight Monday - Friday
   nightly-test:
-     triggers:
-       - schedule:
-           cron: "00 16,17,18,19,20,21,22,23,24 * * 2,3,4,5,6"
-           filters:
-             branches:
-               only:
-                 - test_mem
+#     triggers:
+#       - schedule:
+#           cron: "00 16,17,18,19,20,21,22,23,24 * * 2,3,4,5,6"
+#           filters:
+#             branches:
+#               only:
+#                 - test_mem
      jobs:
         - nightly-test-API24
         #- generate-artifacts
