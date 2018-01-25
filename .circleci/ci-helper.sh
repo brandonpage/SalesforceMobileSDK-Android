@@ -77,9 +77,9 @@ function runTests {
             ./gradlew :libs:SalesforceReact:assemble
         else
             if [[ "${CURRENT_LIB}" == "RestExplorer" ]]; then
-                ./gradlew :native:NativeSampleApps:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --max-workers 2 --stacktrace
+                ./gradlew :native:NativeSampleApps:${CURRENT_LIB}:connectedAndroidTest --continue --profile --no-daemon --max-workers 2 --stacktrace
             else
-                ./gradlew :libs:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon  --max-workers 2 --stacktrace
+                ./gradlew :libs:${CURRENT_LIB}:connectedAndroidTest --continue --profile --no-daemon  --max-workers 2 --stacktrace
             fi
         fi
     else
