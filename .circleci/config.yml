@@ -137,7 +137,7 @@ defaults: &defaults
     - TERM: "dumb"
     - ADB_INSTALL_TIMEOUT: 15
     - MAVEN_OPTS: "-Xms256m -Xmx1024m"
-    - _JAVA_OPTIONS: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
+    #- _JAVA_OPTIONS: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
     - GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs="-XX:+HeapDumpOnOutOfMemoryError"'
     - ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
     - BUILD_THREADS: 2
@@ -358,7 +358,7 @@ jobs:
       - run: *test-salesforce-hybrid
       - run: *test-rest-explorer
       - run: *build-salesforce-react
-      - save_cache: *save-gradle-cache
+      #- save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/reports/
           destination: SalesforceAnalytics
