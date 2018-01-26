@@ -33,6 +33,10 @@ function printTestsToRun {
 }
 
 function startAVD {
+    mvn -version
+    gradle -v
+    java -version
+
     export LD_LIBRARY_PATH=${ANDROID_HOME}/emulator/lib64:${ANDROID_HOME}/emulator/lib64/qt/lib
 
     # This indicates a nightly build and what API version to test
@@ -48,7 +52,7 @@ function startAVD {
         echo "y" | sdkmanager --update
         echo "y" | sdkmanager "system-images;android-24;default;arm64-v8a"
         echo "no" | avdmanager create avd -n test24 -k "system-images;android-24;default;arm64-v8a"
-        emulator -avd "$AVD" -no-window -accel on
+        emulator -avd "$AVD" -noaudio -no-window -accel on
     fi
 }
 
