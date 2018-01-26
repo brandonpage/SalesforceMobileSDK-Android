@@ -33,7 +33,6 @@ function printTestsToRun {
 }
 
 function startAVD {
-    mvn -version
     gradle -v
     java -version
 
