@@ -45,9 +45,10 @@ function startAVD {
             echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
         fi
     else
+        echo "y" | sdkmanager --update
         echo "y" | sdkmanager "system-images;android-24;default;arm64-v8a"
         echo "no" | avdmanager create avd -n test24 -k "system-images;android-24;default;arm64-v8a"
-        emulator -avd "$AVD" -no-audio -no-window -accel on
+        emulator -avd "$AVD" -no-window -accel on
     fi
 }
 
