@@ -34,37 +34,37 @@ aliases:
   - &test-salesforce-analytics
     <<: *lib-run-base
     name: Test SalesforceAnalytics
-    command: ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest
+    command: ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest --no-daemon --max-workers 2
     when: always
 
   - &test-salesforce-sdk
     <<: *lib-run-base
     name: Test SalesforceSDK
-    command: ./gradlew :libs:SalesforceSDK:connectedAndroidTest
+    command: ./gradlew :libs:SalesforceSDK:connectedAndroidTest --no-daemon --max-workers 2
     when: always
 
   - &test-smart-store
     <<: *lib-run-base
     name: Test SmartStore
-    command: ./gradlew :libs:SmartStore:connectedAndroidTest
+    command: ./gradlew :libs:SmartStore:connectedAndroidTest --no-daemon --max-workers 2
     when: always
 
   - &test-smart-sync
     <<: *lib-run-base
     name: Test SmartSync
-    command: ./gradlew :libs:SmartSync:connectedAndroidTest
+    command: ./gradlew :libs:SmartSync:connectedAndroidTest --no-daemon --max-workers 2
     when: always
 
   - &test-salesforce-hybrid
     <<: *lib-run-base
     name: Test SalesforceHybrid
-    command: ./gradlew :libs:SalesforceHybrid:connectedAndroidTest
+    command: ./gradlew :libs:SalesforceHybrid:connectedAndroidTest --no-daemon --max-workers 2
     when: always
 
   - &test-rest-explorer
     <<: *lib-run-base
     name: Test RestExplorer
-    command: ./gradlew :native:NativeSampleApps:RestExplorer:connectedAndroidTest
+    command: ./gradlew :native:NativeSampleApps:RestExplorer:connectedAndroidTest --no-daemon --max-workers 2
     when: always
 
   - &build-salesforce-react
