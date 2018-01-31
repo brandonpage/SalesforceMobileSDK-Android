@@ -34,37 +34,37 @@ aliases:
   - &test-salesforce-analytics
     <<: *lib-run-base
     name: Test SalesforceAnalytics
-    command: ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+    command: ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest
     when: always
 
   - &test-salesforce-sdk
     <<: *lib-run-base
     name: Test SalesforceSDK
-    command: ./gradlew :libs:SalesforceSDK:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+    command: ./gradlew :libs:SalesforceSDK:connectedAndroidTest
     when: always
 
   - &test-smart-store
     <<: *lib-run-base
     name: Test SmartStore
-    command: ./gradlew :libs:SmartStore:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+    command: ./gradlew :libs:SmartStore:connectedAndroidTest
     when: always
 
   - &test-smart-sync
     <<: *lib-run-base
     name: Test SmartSync
-    command: ./gradlew :libs:SmartSync:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+    command: ./gradlew :libs:SmartSync:connectedAndroidTest
     when: always
 
   - &test-salesforce-hybrid
     <<: *lib-run-base
     name: Test SalesforceHybrid
-    command: ./gradlew :libs:SalesforceHybrid:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+    command: ./gradlew :libs:SalesforceHybrid:connectedAndroidTest
     when: always
 
   - &test-rest-explorer
     <<: *lib-run-base
     name: Test RestExplorer
-    command: ./gradlew :native:NativeSampleApps:RestExplorer:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+    command: ./gradlew :native:NativeSampleApps:RestExplorer:connectedAndroidTest
     when: always
 
   - &build-salesforce-react
@@ -140,12 +140,13 @@ defaults: &defaults
   docker:
     - image: circleci/android:api-27-node8-alpha
   environment:
-    - TERM: "dumb"
+    #- TERM: "dumb"
     - ADB_INSTALL_TIMEOUT: 15
-    - _JAVA_OPTIONS: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
-    - GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs="-XX:+HeapDumpOnOutOfMemoryError"'
-    - ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
-    - BUILD_THREADS: 2
+    - JVM_OPTS: -Xmx3200m
+    #- _JAVA_OPTIONS: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
+    #- GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs="-XX:+HeapDumpOnOutOfMemoryError"'
+    #- ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
+    #- BUILD_THREADS: 2
 
   attach_workspace: &attach_workspace
     attach_workspace:
