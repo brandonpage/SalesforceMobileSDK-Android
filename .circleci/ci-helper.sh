@@ -33,6 +33,7 @@ function printTestsToRun {
 }
 
 function startAVD {
+    yes | sdkmanager --licenses || true
     export LD_LIBRARY_PATH=${ANDROID_HOME}/emulator/lib64:${ANDROID_HOME}/emulator/lib64/qt/lib
 
     # This indicates a nightly build and what API version to test
