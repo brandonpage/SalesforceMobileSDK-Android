@@ -330,12 +330,13 @@ jobs:
       - AVD: "test25"
     steps:
       - checkout
-      - restore_cache: *restore-gradle-cache
+      - run: *launch-emulator
+      #- restore_cache: *restore-gradle-cache
       - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
       - run: *setup-env
       - save_cache: *save-node-cache
       - save_cache: *save-ruby-cache
-      - run: *launch-emulator
       - run: *android-lint
       - run: *wait-for-emulator
       - run: *test-salesforce-analytics
