@@ -140,7 +140,7 @@ aliases:
     decode_gservices_key: &decode_gservices_key
       run:
         name: Decode Google Services key
-        command: echo $GOOGLE_SERVICES_KEY | base64 -D > google-services.json
+        command: echo $GOOGLE_SERVICES_KEY | base64 -di > google-services.json
 
     install_gcloud: &install_gcloud
       run:
