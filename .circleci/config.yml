@@ -199,6 +199,7 @@ jobs:
           name: Test
           command: |
             gcloud firebase test android run \
+              --project salesforce-mobile-sdk-an-6e7b1 \
               --type instrumentation \
               --app hybrid/HybridSampleApps/SmartSyncExplorerHybrid/build/outputs/apk/androidTest/debug/SmartSyncExplorerHybrid-debug-androidTest.apk \
               --test libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk  \
