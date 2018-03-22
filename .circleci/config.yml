@@ -197,14 +197,15 @@ jobs:
           command:  ./gradlew -PciBuild=true assemble
       - run:
           name: Test
-          command: gcloud firebase test android run \
-                      --type instrumentation \
-                      --app hybrid/HybridSampleApps/SmartSyncExplorerHybrid/build/outputs/apk/androidTest/debug/SmartSyncExplorerHybrid-debug-androidTest.apk \
-                      --test libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk  \
-                      --device mmodel=NexusLowRes,version=26,locale=en,orientation=portrait  \
-                      --environment-variables coverage=true,coverageFile=/sdcard/tmp/code-coverage/connected/coverage.ec \
-                      --directories-to-pull=/sdcard/tmp \
-                      --timeout 15m
+          command: |
+            gcloud firebase test android run \
+              --type instrumentation \
+              --app hybrid/HybridSampleApps/SmartSyncExplorerHybrid/build/outputs/apk/androidTest/debug/SmartSyncExplorerHybrid-debug-androidTest.apk \
+              --test libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk  \
+              --device mmodel=NexusLowRes,version=26,locale=en,orientation=portrait  \
+              --environment-variables coverage=true,coverageFile=/sdcard/tmp/code-coverage/connected/coverage.ec \
+              --directories-to-pull=/sdcard/tmp \
+              --timeout 15m
           no_output_timeout: 900
       - run:
           name: Get Test Results
