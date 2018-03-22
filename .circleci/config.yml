@@ -148,11 +148,12 @@ aliases:
         command: |
           curl -L https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-193.0.0-linux-x86_64.tar.gz > gcloud.tar.gz
           tar -xvzf gcloud.tar.gz
-          ./google-cloud-sdk/install.sh
+          ./google-cloud-sdk/install.sh >/dev/null 2>&1
           source google-cloud-sdk/path.bash.inc
           source google-cloud-sdk/completion.bash.inc
           echo "y" | gcloud components update
           echo "" | gcloud auth activate-service-account --key-file client-secret.json
+        no_output_timeout: 900
 
 
 defaults: &defaults
