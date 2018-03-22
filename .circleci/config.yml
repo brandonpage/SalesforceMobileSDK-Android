@@ -201,8 +201,8 @@ jobs:
             gcloud firebase test android run \
               --project salesforce-mobile-sdk-an-6e7b1 \
               --type instrumentation \
-              --app hybrid/HybridSampleApps/SmartSyncExplorerHybrid/build/outputs/apk/androidTest/debug/SmartSyncExplorerHybrid-debug-androidTest.apk \
-              --test libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk  \
+              --app ./hybrid/HybridSampleApps/SmartSyncExplorerHybrid/build/outputs/apk/debug/SmartSyncExplorerHybrid-debug.apk \
+              --test ./libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk  \
               --device model=NexusLowRes,version=26,locale=en,orientation=portrait  \
               --environment-variables coverage=true,coverageFile=/sdcard/tmp/code-coverage/connected/coverage.ec \
               --directories-to-pull=/sdcard/tmp \
@@ -210,10 +210,13 @@ jobs:
           no_output_timeout: 900
       - run:
           name: Get Test Results
-          command: gsutil -m cp -r -U "`gsutil ls gs://test-lab-2mn77smkbh274-kuy875zar6yqi | tail -1`*" firebase/
+          command: mkdir firebase && gsutil -m cp -r -U "`gsutil ls gs://test-lab-2mn77smkbh274-kuy875zar6yqi | tail -1`*" ./firebase/
       - run:
           name: Copy Coverage Results
           command: mkdir -p libs/SalesforceHybrid/build/outputs/code-coverage/connected && cp firebase/NexusLowRes-26-en_US-portrait/artifacts/coverage.ec libs/SalesforceHybrid/build/outputs/code-coverage/connected/coverage.ec
+      - store_artifacts:
+          path: firebase/
+          destination: SalesforceHybrid-Firebase
       - store_artifacts:
           path: libs/SalesforceHybrid/build/reports/
           destination: SalesforceHybrid
