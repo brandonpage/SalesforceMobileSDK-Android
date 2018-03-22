@@ -211,9 +211,11 @@ jobs:
       - run:
           name: Get Test Results
           command: mkdir firebase && gsutil -m cp -r -U "`gsutil ls gs://test-lab-2mn77smkbh274-kuy875zar6yqi | tail -1`*" ./firebase/
+          when: always
       - run:
           name: Copy Coverage Results
           command: mkdir -p libs/SalesforceHybrid/build/outputs/code-coverage/connected && cp firebase/NexusLowRes-26-en_US-portrait/artifacts/coverage.ec libs/SalesforceHybrid/build/outputs/code-coverage/connected/coverage.ec
+          when: always
       - store_artifacts:
           path: firebase/
           destination: SalesforceHybrid-Firebase
