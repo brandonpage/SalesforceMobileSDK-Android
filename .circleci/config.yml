@@ -202,7 +202,7 @@ jobs:
               --type instrumentation \
               --app hybrid/HybridSampleApps/SmartSyncExplorerHybrid/build/outputs/apk/androidTest/debug/SmartSyncExplorerHybrid-debug-androidTest.apk \
               --test libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk  \
-              --device mmodel=NexusLowRes,version=26,locale=en,orientation=portrait  \
+              --device model=NexusLowRes,version=26,locale=en,orientation=portrait  \
               --environment-variables coverage=true,coverageFile=/sdcard/tmp/code-coverage/connected/coverage.ec \
               --directories-to-pull=/sdcard/tmp \
               --timeout 15m
