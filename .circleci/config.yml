@@ -152,7 +152,7 @@ aliases:
           source google-cloud-sdk/path.bash.inc
           source google-cloud-sdk/completion.bash.inc
           echo "y" | gcloud components update
-          echo "" | gcloud auth activate-service-account --key-file client-secret.json
+          echo "" | gcloud auth activate-service-account --key-file google-services.json
         no_output_timeout: 900
 
 
