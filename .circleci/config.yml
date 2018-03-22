@@ -133,6 +133,27 @@ aliases:
     command: bash <(curl -s https://codecov.io/bash)
     when: always
 
+    export_gservices_key: &export_gservices_key
+      run:
+        name: Export Google Services key environment variable
+        command: echo 'export GOOGLE_SERVICES_KEY="$GOOGLE_SERVICES_KEY"' >> $BASH_ENV
+    decode_gservices_key: &decode_gservices_key
+      run:
+        name: Decode Google Services key
+        command: echo $GOOGLE_SERVICES_KEY | base64 -D > google-services.json
+
+    install_gcloud: &install_gcloud
+      run:
+        name: Install Google Cloud
+        command: |
+          curl -L https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-193.0.0-linux-x86_64.tar.gz > gcloud.tar.gz
+          tar -xvzf gcloud.tar.gz
+          n | ./google-cloud-sdk/install.sh
+          source google-cloud-sdk/path.bash.inc
+          source google-cloud-sdk/completion.bash.inc
+          gcloud auth activate-service-account --key-file client-secret.json
+
+
 defaults: &defaults
   working_directory: ~/SalesforceMobileSDK-Android
   docker:
@@ -158,6 +179,51 @@ defaults: &defaults
 
 version: 2
 jobs:
+  test_firebase:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
+      - run: *setup-env
+      - *export_gservices_key
+      - *decode_gservices_key
+      - *install_gcloud
+      - run:
+          name: Build for Testing
+          command:  ./gradlew -PciBuild=true assemble
+      - run:
+          name: Test
+          command: gcloud firebase test android run \
+                      --type instrumentation \
+                      --app hybrid/HybridSampleApps/SmartSyncExplorerHybrid/build/outputs/apk/androidTest/debug/SmartSyncExplorerHybrid-debug-androidTest.apk \
+                      --test libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk  \
+                      --device mmodel=NexusLowRes,version=26,locale=en,orientation=portrait  \
+                      --environment-variables coverage=true,coverageFile=/sdcard/tmp/code-coverage/connected/coverage.ec \
+                      --directories-to-pull=/sdcard/tmp \
+                      --timeout 15m
+          no_output_timeout: 900
+      - run:
+          name: Get Test Results
+          command: gsutil -m cp -r -U "`gsutil ls gs://test-lab-2mn77smkbh274-kuy875zar6yqi | tail -1`*" firebase/
+      - run:
+          name: Copy Coverage Results
+          command: mkdir -p libs/SalesforceHybrid/build/outputs/code-coverage/connected && cp firebase/NexusLowRes-26-en_US-portrait/artifacts/coverage.ec libs/SalesforceHybrid/build/outputs/code-coverage/connected/coverage.ec
+      - store_artifacts:
+          path: libs/SalesforceHybrid/build/reports/
+          destination: SalesforceHybrid
+      - store_test_results:
+          path: libs/SalesforceHybrid/build/outputs/androidTest-results/
+      - run: *codecov
+      - save_cache: *save-gradle-cache
+      - save_cache: *save-node-cache
+      - save_cache: *save-ruby-cache
+
+
+
+
+######################
   setup:
     <<: *defaults
     steps:
@@ -467,39 +533,4 @@ workflows:
 
   pr-test:
     jobs:
-      - setup
-      - test-SalesforceAnalytics:
-          requires:
-            - setup
-      - test-SalesforceSDK:
-          requires:
-            - setup
-      - test-SmartStore:
-          requires:
-            - setup
-      - test-SmartSync:
-          requires:
-            - setup
-      - test-SalesforceHybrid:
-          requires:
-            - setup
-      - test-RestExplorer:
-          requires:
-            - setup
-      - test-SalesforceReact:
-          requires:
-            - setup
-
- # Cron are on a timezone 8 hours ahead of PST
- # Nightly run is set for midnight Monday - Friday
-  nightly-test:
-     triggers:
-       - schedule:
-           cron: "00 8 * * 2,3,4,5,6"
-           filters:
-             branches:
-               only:
-                 - dev
-     jobs:
-        - nightly-test
-        - generate-artifacts
+      - test_firebase
