@@ -151,7 +151,8 @@ aliases:
           ./google-cloud-sdk/install.sh
           source google-cloud-sdk/path.bash.inc
           source google-cloud-sdk/completion.bash.inc
-          gcloud auth activate-service-account --key-file client-secret.json
+          echo "y" | gcloud components update
+          echo "" | gcloud auth activate-service-account --key-file client-secret.json
 
 
 defaults: &defaults
