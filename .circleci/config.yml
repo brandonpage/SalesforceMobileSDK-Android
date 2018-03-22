@@ -148,7 +148,7 @@ aliases:
         command: |
           curl -L https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-193.0.0-linux-x86_64.tar.gz > gcloud.tar.gz
           tar -xvzf gcloud.tar.gz
-          n | ./google-cloud-sdk/install.sh
+          ./google-cloud-sdk/install.sh
           source google-cloud-sdk/path.bash.inc
           source google-cloud-sdk/completion.bash.inc
           gcloud auth activate-service-account --key-file client-secret.json
