@@ -194,7 +194,7 @@ jobs:
       - *install_gcloud
       - run:
           name: Build for Testing
-          command:  ./gradlew -PciBuild=true assemble
+          command:  ./gradlew -PciBuild=true assembleDebug assembleAndroidTest
       - run:
           name: Test
           command: |
