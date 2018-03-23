@@ -214,7 +214,7 @@ jobs:
           command: |
             sudo apt-get install gcc python-dev python-setuptools
             sudo easy_install -U pip
-            sudo pip uninstall crcmod
+            echo "y" | sudo pip uninstall crcmod
             sudo pip install -U crcmod
             mkdir firebase
             gsutil -m cp -r -U "`gsutil ls gs://test-lab-2mn77smkbh274-kuy875zar6yqi | tail -1`*" ./firebase/
