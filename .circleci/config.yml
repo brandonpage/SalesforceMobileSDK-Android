@@ -194,7 +194,7 @@ jobs:
       - *install_gcloud
       - run:
           name: Build for Testing
-          command:  ./gradlew -PciBuild=true assembleDebug assembleAndroidTest
+          command:  ./gradlew -PciBuild=true assembleDebug assembleAndroidTest --continue --no-daemon --profile --max-workers 2
       - run:
           name: Test
           command: |
@@ -208,22 +208,26 @@ jobs:
               --directories-to-pull=/sdcard/tmp \
               --timeout 15m
           no_output_timeout: 900
+          when: always
       - run:
           name: Get Test Results
-          command: mkdir firebase && gsutil -m cp -r -U "`gsutil ls gs://test-lab-2mn77smkbh274-kuy875zar6yqi | tail -1`*" ./firebase/
+          command: |
+            sudo apt-get install gcc python-dev python-setuptools
+            sudo easy_install -U pip
+            sudo pip uninstall crcmod
+            sudo pip install -U crcmod
+            mkdir firebase
+            gsutil -m cp -r -U "`gsutil ls gs://test-lab-2mn77smkbh274-kuy875zar6yqi | tail -1`*" ./firebase/
           when: always
       - run:
           name: Copy Coverage Results
-          command: mkdir -p libs/SalesforceHybrid/build/outputs/code-coverage/connected && cp firebase/NexusLowRes-26-en_US-portrait/artifacts/coverage.ec libs/SalesforceHybrid/build/outputs/code-coverage/connected/coverage.ec
+          command: mkdir -p libs/SalesforceHybrid/build/outputs/code-coverage/connected && cp firebase/Nexus6P-27-en_US-portrait/artifacts/coverage.ec libs/SalesforceHybrid/build/outputs/code-coverage/connected/coverage.ec
           when: always
       - store_artifacts:
           path: firebase/
           destination: SalesforceHybrid-Firebase
-      - store_artifacts:
-          path: libs/SalesforceHybrid/build/reports/
-          destination: SalesforceHybrid
       - store_test_results:
-          path: libs/SalesforceHybrid/build/outputs/androidTest-results/
+          path: firebase/
       - run: *codecov
       - save_cache: *save-gradle-cache
       - save_cache: *save-node-cache
