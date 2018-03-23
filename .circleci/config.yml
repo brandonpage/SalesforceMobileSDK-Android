@@ -193,6 +193,13 @@ jobs:
       - *decode_gservices_key
       - *install_gcloud
       - run:
+          name: Setup gsutil
+          command: |
+            sudo apt-get install gcc python-dev python-setuptools
+            sudo easy_install -U pip
+            echo "y" | sudo pip uninstall crcmod
+            sudo pip install -U crcmod
+      - run:
           name: Build for Testing
           command:  ./gradlew -PciBuild=true assembleDebug assembleAndroidTest --continue --no-daemon --profile --max-workers 2
       - run:
@@ -208,14 +215,10 @@ jobs:
               --directories-to-pull=/sdcard/tmp \
               --timeout 15m
           no_output_timeout: 900
-          when: always
+          #when: always
       - run:
           name: Get Test Results
           command: |
-            sudo apt-get install gcc python-dev python-setuptools
-            sudo easy_install -U pip
-            echo "y" | sudo pip uninstall crcmod
-            sudo pip install -U crcmod
             mkdir firebase
             gsutil -m cp -r -U "`gsutil ls gs://test-lab-2mn77smkbh274-kuy875zar6yqi | tail -1`*" ./firebase/
           when: always
