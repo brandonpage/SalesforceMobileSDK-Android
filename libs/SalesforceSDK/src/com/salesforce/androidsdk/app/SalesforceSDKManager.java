@@ -91,8 +91,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
  * This class serves as an interface to the various
@@ -107,7 +107,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "6.1.0.dev";
+    public static final String SDK_VERSION = "6.2.0.dev";
 
     /**
      * Intent action meant for instances of SalesforceSDKManager residing in other processes
@@ -255,7 +255,7 @@ public class SalesforceSDKManager {
     	if (loginActivity != null) {
             this.loginActivityClass = loginActivity;
     	}
-        this.features  = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+    	this.features = new ConcurrentSkipListSet<>(String.CASE_INSENSITIVE_ORDER);
 
         /*
          * Checks if an analytics app name has already been set by the app.
@@ -278,13 +278,6 @@ public class SalesforceSDKManager {
         // If your app runs in multiple processes, all the SalesforceSDKManager need to run cleanup during a logout
         cleanupReceiver = new CleanupReceiver();
         context.registerReceiver(cleanupReceiver, new IntentFilter(SalesforceSDKManager.CLEANUP_INTENT_ACTION));
-
-        // Enables IDP login flow if it's set through MDM.
-        final RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(context);
-        final String idpAppUrlScheme = runtimeConfig.getString(RuntimeConfig.ConfigKey.IDPAppURLScheme);
-        if (!TextUtils.isEmpty(idpAppUrlScheme)) {
-            this.idpAppURIScheme = idpAppUrlScheme;
-        }
     }
 
     /**
@@ -466,6 +459,13 @@ public class SalesforceSDKManager {
 
         // Initializes the HTTP client.
         HttpAccess.init(context, INSTANCE.getUserAgent());
+
+        // Enables IDP login flow if it's set through MDM.
+        final RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(context);
+        final String idpAppUrlScheme = runtimeConfig.getString(RuntimeConfig.ConfigKey.IDPAppURLScheme);
+        if (!TextUtils.isEmpty(idpAppUrlScheme)) {
+            INSTANCE.idpAppURIScheme = idpAppUrlScheme;
+        }
     }
 
     /**
@@ -1142,7 +1142,8 @@ public class SalesforceSDKManager {
         }
         String appTypeWithQualifier = getAppType() + qualifier;
         return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s",
-                SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, appTypeWithQualifier, uid, TextUtils.join(".",features));
+                SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion,
+                appTypeWithQualifier, uid, TextUtils.join(".", features));
     }
 
     /**

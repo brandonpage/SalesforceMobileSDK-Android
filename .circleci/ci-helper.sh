@@ -19,9 +19,9 @@ function envSetup {
 }
 
 function printTestsToRun {
-    if [ -z "$CIRCLE_PULL_REQUEST" ]; then
-        echo "Not a PR.  Run everything"
-    else
+    if [[ ${CIRCLE_JOB} == *"nightly-test"* ]]; then
+        echo -e "\n\nNightly -> Run everything."
+    elif [ -n "$CIRCLE_PULL_REQUEST" ]; then
         LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
         echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
         if [[ ! -z ${LIBS_TO_TEST} ]]; then
@@ -29,32 +29,26 @@ function printTestsToRun {
         else
             echo -e "\n\nNothing to Test."
         fi
+    else
+        echo -e "\n\nNot a PR -> skip tests."
     fi
 }
 
 function startAVD {
-    export LD_LIBRARY_PATH=${ANDROID_HOME}/emulator/lib64:${ANDROID_HOME}/emulator/lib64/qt/lib
-
-    # This indicates a nightly build and what API version to test
-    if [ -z "$AVD" ]; then
-        if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
-            echo "y" | sdkmanager "system-images;android-22;default;armeabi-v7a"
-            echo "no" | avdmanager create avd -n test22 -k "system-images;android-22;default;armeabi-v7a"
-            emulator64-arm -avd test22 -noaudio -no-window -accel on
-        else
-            echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
-        fi
+    if [[ ${CIRCLE_JOB} == *"nightly-test"* ]] || [ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+        export LD_LIBRARY_PATH=${ANDROID_HOME}/emulator/lib64:${ANDROID_HOME}/emulator/lib64/qt/lib
+        echo "y" | sdkmanager "system-images;android-22;default;armeabi-v7a"
+        echo "no" | avdmanager create avd -n test22 -k "system-images;android-22;default;armeabi-v7a"
+        emulator64-arm -avd test22 -noaudio -no-window -accel on
     else
-        echo "y" | sdkmanager "system-images;android-24;default;arm64-v8a"
-        echo "no" | avdmanager create avd -n test24 -k "system-images;android-24;default;arm64-v8a"
-        emulator -avd "$AVD" -no-audio -no-window -accel on
+        echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
     fi
 }
 
 function waitForAVD {
     set +e
 
-    if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+    if [[ ${CIRCLE_JOB} == *"nightly-test"* ]] || [ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
         local bootanim=""
         export PATH=$(dirname $(dirname $(which android)))/platform-tools:$PATH
         until [[ "$bootanim" =~ "stopped" ]]; do
@@ -72,15 +66,11 @@ function waitForAVD {
 }
 
 function runTests {
-    if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
-        if [[ "${CURRENT_LIB}" == "SalesforceReact" ]]; then
-            ./gradlew :libs:SalesforceReact:assemble
+    if [ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+        if [[ "${CURRENT_LIB}" == "RestExplorer" ]]; then
+            ./gradlew :native:NativeSampleApps:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2 --stacktrace
         else
-            if [[ "${CURRENT_LIB}" == "RestExplorer" ]]; then
-                ./gradlew :native:NativeSampleApps:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2 --stacktrace
-            else
-                ./gradlew :libs:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2 --stacktrace
-            fi
+            ./gradlew :libs:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2 --stacktrace
         fi
     else
         echo "No need to run ${CURRENT_LIB} tests for this PR."
@@ -90,12 +80,12 @@ function runTests {
 function runDanger {
     if [ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
         if [ -z "${CURRENT_LIB}" ]; then
-            DANGER_GITHUB_API_TOKEN="c21349d8a97e1bf9cdd9""301fd949a83db862216b" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
+            DANGER_GITHUB_API_TOKEN="5d42eadf98c58c9c4f60""7fcfc72cee4c7ef1486b" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
         else
             if ls libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/*.xml 1> /dev/null 2>&1; then
                 mv libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/*.xml libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/test-results.xml
             fi
-            DANGER_GITHUB_API_TOKEN="c21349d8a97e1bf9cdd9""301fd949a83db862216b" danger --dangerfile=.circleci/Dangerfile_Lib.rb --danger_id="${CURRENT_LIB}" --verbose
+            DANGER_GITHUB_API_TOKEN="5d42eadf98c58c9c4f60""7fcfc72cee4c7ef1486b" danger --dangerfile=.circleci/Dangerfile_Lib.rb --danger_id="${CURRENT_LIB}" --verbose
         fi
     else
         echo "No need to run Danger."

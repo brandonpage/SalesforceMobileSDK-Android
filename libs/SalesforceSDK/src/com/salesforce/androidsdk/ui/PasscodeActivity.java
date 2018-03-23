@@ -480,8 +480,12 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         .create();
     }
 
-    private void showFingerprintDialog() {
-        if (passcodeManager != null && isFingerprintEnabled()) {
+    /**
+     * Displays the fingerprint dialog. This can be overridden to provide
+     * a custom fingerprint auth layout if the app chooses to do so.
+     */
+    protected void showFingerprintDialog() {
+        if (passcodeManager != null && isFingerprintEnabled() && !SalesforceSDKUpgradeManager.getInstance().isPasscodeUpgradeRequired()) {
             final FingerprintAuthDialogFragment fingerprintAuthDialog = new FingerprintAuthDialogFragment();
             fingerprintAuthDialog.setContext(this);
             fingerprintAuthDialog.show(getFragmentManager(), "fingerprintDialog");
