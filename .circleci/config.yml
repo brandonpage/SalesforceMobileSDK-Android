@@ -173,12 +173,11 @@ jobs:
       - save_cache: *save-ruby-cache
       - run: *run-danger
       - persist_to_workspace:
-          # Must be an absolute path, or relative path from working_directory
           root: .
-          # Must be relative path from root
           paths:
             - ./**
 
+  
   test-SalesforceAnalytics:
     <<: *defaults
     environment:
@@ -439,7 +438,7 @@ workflows:
      triggers:
        - schedule:
     ########## Change to 00 6 * * 2,3,4,5,6 after test 
-           cron: "01 0 * * 2,3,4,5,6"
+           cron: "45 1 * * 2,3,4,5,6"
            filters:
              branches:
                only:
@@ -448,23 +447,30 @@ workflows:
         - generate-artifacts
         - setup
         - test-SalesforceAnalytics:
+            context: nightly-test
             requires:
                 - setup
         - test-SalesforceSDK:
+            context: nightly-test
             requires:
                 - setup
         - test-SmartStore:
+            context: nightly-test
             requires:
                 - setup
         - test-SmartSync:
+            context: nightly-test
             requires:
                 - setup
         - test-SalesforceHybrid:
+            context: nightly-test
             requires:
                 - setup
         - test-RestExplorer:
+            context: nightly-test
             requires:
                 - setup
         - test-SalesforceReact:
+            context: nightly-test
             requires:
                 - setup
