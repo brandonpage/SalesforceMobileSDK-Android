@@ -86,6 +86,26 @@ aliases:
     attach_workspace:
       at: ~/SalesforceMobileSDK-Android
 
+  - &export_gservices_key
+    name: Export Google Services key environment variable
+    command: echo 'export GOOGLE_SERVICES_KEY="$GOOGLE_SERVICES_KEY"' >> $BASH_ENV
+
+  - &decode_gservices_key
+    name: Decode Google Services key
+    command: echo $GOOGLE_SERVICES_KEY | base64 -di > google-services.json
+
+  - &install_gcloud
+    name: Install Google Cloud
+    command: |
+        curl -L https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-193.0.0-linux-x86_64.tar.gz > gcloud.tar.gz
+        tar -xvzf gcloud.tar.gz
+        ./google-cloud-sdk/install.sh >/dev/null 2>&1
+        source google-cloud-sdk/path.bash.inc
+        source google-cloud-sdk/completion.bash.inc
+        echo "y" | gcloud components update
+        echo "" | gcloud auth activate-service-account --key-file google-services.json
+    no_output_timeout: 900
+
 defaults: &defaults
   working_directory: ~/SalesforceMobileSDK-Android
   docker:
@@ -126,6 +146,74 @@ jobs:
           paths:
             - ./**
   
+  setup-firebase:
+    <<: *defaults
+    steps:
+      - checkout
+      - run: *determine-tests-to-run
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
+      - run: *setup-env
+      - run: *android-lint
+      - save_cache: *save-gradle-cache
+      - save_cache: *save-node-cache
+      - save_cache: *save-ruby-cache
+      - run: *export_gservices_key
+      - run: *decode_gservices_key
+      - run: *install_gcloud
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./**
+
+  test-SalesforceHybrid-firebase:
+    <<: *defaults
+    environment:
+      - CURRENT_LIB: "SalesforceAnalytics"
+    steps:
+      - *attach_workspace
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-ruby-cache
+      - run:
+          name: Setup gsutil
+          command: |
+            sudo apt-get install gcc python-dev python-setuptools
+            sudo easy_install -U pip
+            echo "y" | sudo pip uninstall crcmod
+            sudo pip install -U crcmod
+      - run:
+          name: Build for Testing
+          command:  ./gradlew -PciBuild=true assembleDebug assembleAndroidTest --continue --no-daemon --profile --max-workers 2
+      - run:
+          name: Test
+          command: |
+            gcloud firebase test android run \
+              --project mobile-apps-firebase-test \
+              --type instrumentation \
+              --app ./hybrid/HybridSampleApps/SmartSyncExplorerHybrid/build/outputs/apk/debug/SmartSyncExplorerHybrid-debug.apk \
+              --test ./libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk  \
+              --device model=NexusLowRes,version=26,locale=en,orientation=portrait  \
+              --environment-variables coverage=true,coverageFile=/sdcard/tmp/code-coverage/connected/coverage.ec \
+              --directories-to-pull=/sdcard/tmp \
+              --timeout 15m
+          no_output_timeout: 900
+      - run:
+          name: Get Test Results
+          command: |
+            mkdir firebase
+            gsutil -m cp -r -U "`gsutil ls gs://test-lab-2mn77smkbh274-kuy875zar6yqi | tail -1`*" ./firebase/
+          when: always
+      - run:
+          name: Copy Coverage Results
+          command: mkdir -p libs/SalesforceHybrid/build/outputs/code-coverage/connected && cp firebase/Nexus6P-27-en_US-portrait/artifacts/coverage.ec libs/SalesforceHybrid/build/outputs/code-coverage/connected/coverage.ec
+          when: always
+      - store_artifacts:
+          path: firebase/
+          destination: SalesforceHybrid-Firebase
+      - store_test_results:
+          path: firebase/
+
   test-SalesforceAnalytics:
     <<: *defaults
     environment:
@@ -417,44 +505,17 @@ workflows:
           requires:
             - setup
 
- # Cron are on a timezone 8 hours ahead of PST
- # Nightly run is set for ~10PM Monday - Friday
   nightly-test:
      triggers:
        - schedule:
-           cron: "00 6 * * 2,3,4,5,6"
+           cron: "45 21 * * 2,3,4,5,6"
            filters:
              branches:
                only:
                  - dev
      jobs:
-        - generate-artifacts
-        - setup
-        - test-SalesforceAnalytics:
+        - setup-firebase
+        - test-SalesforceHybrid-firebase:
             context: nightly-test
             requires:
-                - setup
-        - test-SalesforceSDK:
-            context: nightly-test
-            requires:
-                - setup
-        - test-SmartStore:
-            context: nightly-test
-            requires:
-                - setup
-        - test-SmartSync:
-            context: nightly-test
-            requires:
-                - setup
-        - test-SalesforceHybrid:
-            context: nightly-test
-            requires:
-                - setup
-        - test-RestExplorer:
-            context: nightly-test
-            requires:
-                - setup
-        - test-SalesforceReact:
-            context: nightly-test
-            requires:
-                - setup
+                - setup-firebase
