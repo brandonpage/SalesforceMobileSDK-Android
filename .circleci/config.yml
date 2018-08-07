@@ -86,30 +86,10 @@ aliases:
     attach_workspace:
       at: ~/SalesforceMobileSDK-Android
 
-  - &export_gservices_key
-    name: Export Google Services key environment variable
-    command: echo 'export GOOGLE_SERVICES_KEY="$GOOGLE_SERVICES_KEY"' >> $BASH_ENV
-
-  - &decode_gservices_key
-    name: Decode Google Services key
-    command: echo $GOOGLE_SERVICES_KEY | base64 -di > google-services.json
-
-  - &install_gcloud
-    name: Install Google Cloud
-    command: |
-        curl -L https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-193.0.0-linux-x86_64.tar.gz > gcloud.tar.gz
-        tar -xvzf gcloud.tar.gz
-        ./google-cloud-sdk/install.sh >/dev/null 2>&1
-        source google-cloud-sdk/path.bash.inc
-        source google-cloud-sdk/completion.bash.inc
-        echo "y" | gcloud components update
-        echo "" | gcloud auth activate-service-account --key-file google-services.json
-    no_output_timeout: 900
-
 defaults: &defaults
   working_directory: ~/SalesforceMobileSDK-Android
   docker:
-    - image: circleci/android:api-27-node8-alpha
+    - image: circleci/android:api-28-node8-alpha
   environment:
     - TERM: "dumb"
     - ADB_INSTALL_TIMEOUT: 15
@@ -145,27 +125,6 @@ jobs:
           root: .
           paths:
             - ./**
-  
-  setup-firebase:
-    <<: *defaults
-    steps:
-      - checkout
-      - run: *determine-tests-to-run
-      - restore_cache: *restore-gradle-cache
-      - restore_cache: *restore-node-cache
-      - restore_cache: *restore-ruby-cache
-      - run: *setup-env
-      - run: *android-lint
-      - save_cache: *save-gradle-cache
-      - save_cache: *save-node-cache
-      - save_cache: *save-ruby-cache
-      - run: *export_gservices_key
-      - run: *decode_gservices_key
-      - run: *install_gcloud
-      - persist_to_workspace:
-          root: .
-          paths:
-            - ./**
 
   test-SalesforceHybrid-firebase:
     <<: *defaults
@@ -176,12 +135,13 @@ jobs:
       - restore_cache: *restore-gradle-cache
       - restore_cache: *restore-ruby-cache
       - run:
-          name: Setup gsutil
+          name: Store Google Service Account
+          command: echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
+      - run:
+          name: Authorize gcloud and set config defaults
           command: |
-            sudo apt-get install gcc python-dev python-setuptools
-            sudo easy_install -U pip
-            echo "y" | sudo pip uninstall crcmod
-            sudo pip install -U crcmod
+            sudo gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
+            sudo gcloud --quiet config set project mobile-apps-firebase-test
       - run:
           name: Build for Testing
           command:  ./gradlew -PciBuild=true assembleDebug assembleAndroidTest --continue --no-daemon --profile --max-workers 2
@@ -198,16 +158,15 @@ jobs:
               --directories-to-pull=/sdcard/tmp \
               --timeout 15m
           no_output_timeout: 900
-      - run:
-          name: Get Test Results
-          command: |
-            mkdir firebase
-            gsutil -m cp -r -U "`gsutil ls gs://test-lab-2mn77smkbh274-kuy875zar6yqi | tail -1`*" ./firebase/
-          when: always
-      - run:
-          name: Copy Coverage Results
-          command: mkdir -p libs/SalesforceHybrid/build/outputs/code-coverage/connected && cp firebase/Nexus6P-27-en_US-portrait/artifacts/coverage.ec libs/SalesforceHybrid/build/outputs/code-coverage/connected/coverage.ec
-          when: always
+     # - run:
+     #     name: Install gsutil dependency and copy test results data
+     #     command: |
+     #       sudo pip install -U crcmod
+     #       sudo gsutil -m cp -r -U `sudo gsutil ls gs://[BUCKET_NAME]/[OBJECT_NAME] | tail -1` ${CIRCLE_ARTIFACTS}/ | true
+     # - run:
+     #     name: Copy Coverage Results
+     #     command: mkdir -p libs/SalesforceHybrid/build/outputs/code-coverage/connected && cp firebase/Nexus6P-27-en_US-portrait/artifacts/coverage.ec libs/SalesforceHybrid/build/outputs/code-coverage/connected/coverage.ec
+     #     when: always
       - store_artifacts:
           path: firebase/
           destination: SalesforceHybrid-Firebase
@@ -480,39 +439,7 @@ jobs:
 workflows:
   version: 2
 
-  pr-test:
-    jobs:
-      - setup
-      - test-SalesforceAnalytics:
-          requires:
-            - setup
-      - test-SalesforceSDK:
-          requires:
-            - setup
-      - test-SmartStore:
-          requires:
-            - setup
-      - test-SmartSync:
-          requires:
-            - setup
-      - test-SalesforceHybrid:
-          requires:
-            - setup
-      - test-RestExplorer:
-          requires:
-            - setup
-      - test-SalesforceReact:
-          requires:
-            - setup
-
   nightly-test:
-     triggers:
-       - schedule:
-           cron: "15 21 * * 2,3,4,5,6"
-           filters:
-             branches:
-               only:
-                 - firebase-test
      jobs:
         - setup-firebase
         - test-SalesforceHybrid-firebase:
