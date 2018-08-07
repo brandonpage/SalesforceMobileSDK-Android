@@ -441,7 +441,7 @@ workflows:
 
   nightly-test:
      jobs:
-        - setup-firebase
+        - setup
         - test-SalesforceHybrid-firebase:
             context: nightly-test
             requires:
