@@ -140,9 +140,8 @@ jobs:
       - run:
           name: Authorize gcloud and set config defaults
           command: |
-            sudo gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
-            sudo gcloud --quiet config set project mobile-apps-firebase-test
-            sudo chown -R $USER /home/ubuntu/.config
+            gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
+            gcloud --quiet config set project mobile-apps-firebase-test
       - run:
           name: Build for Testing
           command:  |
