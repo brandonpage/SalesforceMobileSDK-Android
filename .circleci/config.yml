@@ -144,7 +144,9 @@ jobs:
             sudo gcloud --quiet config set project mobile-apps-firebase-test
       - run:
           name: Build for Testing
-          command:  ./gradlew -PciBuild=true assembleDebug assembleAndroidTest --continue --no-daemon --profile --max-workers 2
+          command:  |
+            ./gradlew :libs:SalesforceHybrid:assembleAndroidtest
+            ./gradlew :hybrid:HybridSampleApps:SmartSyncExplorerHybrid:assembleAndroidTest
       - run:
           name: Test
           command: |
