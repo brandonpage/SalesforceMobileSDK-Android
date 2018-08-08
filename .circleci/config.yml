@@ -149,7 +149,7 @@ jobs:
             ./gradlew :hybrid:HybridSampleApps:SmartSyncExplorerHybrid:assembleAndroidTest
       - run:
           name: Test
-          command: 
+          command: |
             gcloud firebase test android run \
               --project mobile-apps-firebase-test \
               --type instrumentation \
