@@ -163,18 +163,15 @@ jobs:
       - run:
           name: Install gsutil dependency and copy test results data
           command: |
-            mkdir firebase
+            mkdir -p firebase/results
             gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw | tail -1`*" ./firebase/
-          when: always
-      - run:
-          name: Copy Coverage Results
-          command: mkdir -p libs/SalesforceHybrid/build/outputs/code-coverage/connected && cp firebase/Nexus6P-27-en_US-portrait/artifacts/coverage.ec libs/SalesforceHybrid/build/outputs/code-coverage/connected/coverage.ec
+            cp firebase/**/test_result_1.xml firebase/results
           when: always
       - store_artifacts:
           path: firebase/
           destination: SalesforceHybrid-Firebase
       - store_test_results:
-          path: firebase/
+          path: firebase/results
 
   test-SalesforceAnalytics:
     <<: *defaults
