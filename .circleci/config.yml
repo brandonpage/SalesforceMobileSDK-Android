@@ -135,26 +135,30 @@ jobs:
       - restore_cache: *restore-gradle-cache
       - restore_cache: *restore-ruby-cache
       - run:
+          name: Store Google Service Account
+          command: echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
+      - run:
+          name: Authorize gcloud and set config defaults
+          command: |
+            sudo gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
+            sudo gcloud --quiet config set project mobile-apps-firebase-test
+            sudo chown -R $USER /home/ubuntu/.config
+      - run:
           name: Build for Testing
           command:  |
             ./gradlew :libs:SalesforceHybrid:assembleAndroidtest
             ./gradlew :hybrid:HybridSampleApps:SmartSyncExplorerHybrid:assembleAndroidTest
       - run:
-          name: Store Google Service Account
-          command: echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
-      - run:
           name: Test
-          command: |
-            sudo gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
-            sudo gcloud --quiet config set project mobile-apps-firebase-test
-            gcloud firebase test android run \
-              --project mobile-apps-firebase-test \
-              --type instrumentation \
-              --app ./hybrid/HybridSampleApps/SmartSyncExplorerHybrid/build/outputs/apk/debug/SmartSyncExplorerHybrid-debug.apk \
-              --test ./libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk  \
-              --device model=NexusLowRes,version=26,locale=en,orientation=portrait  \
-              --environment-variables coverage=true,coverageFile=/sdcard/tmp/code-coverage/connected/coverage.ec \
-              --directories-to-pull=/sdcard/tmp \
+          command: >
+            gcloud firebase test android run
+              --project mobile-apps-firebase-test
+              --type instrumentation
+              --app ./hybrid/HybridSampleApps/SmartSyncExplorerHybrid/build/outputs/apk/debug/SmartSyncExplorerHybrid-debug.apk
+              --test ./libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk
+              --device model=NexusLowRes,version=26,locale=en,orientation=portrait
+              --environment-variables coverage=true,coverageFile=/sdcard/tmp/code-coverage/connected/coverage.ec
+              --directories-to-pull=/sdcard/tmp
               --timeout 15m
           no_output_timeout: 900
      # - run:
