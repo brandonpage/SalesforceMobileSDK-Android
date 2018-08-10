@@ -97,12 +97,15 @@ aliases:
     command: |
         mkdir -p firebase/results
         gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${CURRENT_LIB}-${CIRCLE_BUILD_NUM} | tail -1`*" ./firebase/
-        mv firebase/**/test_result_1.xml firebase/results
+        mv firebase/test_result_1.xml firebase/results
     when: always
     
   - &run-firebase-tests
     name: Test
     command: |
+        gcloud version
+        gcloud components update
+        gcloud version
         gcloud firebase test android run \
             --project mobile-apps-firebase-test \
             --type instrumentation \
@@ -172,6 +175,12 @@ jobs:
           name: Build for Testing
           command:  |
             ./gradlew libs:SalesforceAnalytics:assembleAndroidTest
+            ./gradlew libs:SalesforceSDK:assembleAndroidTest
+            ./gradlew libs:SmartStore:assembleAndroidTest
+            ./gradlew libs:SmartSync:assembleAndroidTest
+            ./gradlew libs:SalesforceHybrid:assembleAndroidTest
+            ./gradlew libs:SalesforceReact:assembleAndroidTest
+            ./gradlew native:NativeSampleApps:RestExplorer:assembleAndroidTest
             ./gradlew native:NativeSampleApps:AppConfigurator:assembleDebug
       - persist_to_workspace:
           root: .
@@ -213,11 +222,6 @@ jobs:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
       - restore_cache: *restore-ruby-cache
-      #- run:
-      #    name: Build for Testing
-      #    command:  |
-      #      ./gradlew :libs:SalesforceAnalytics:assembleAndroidtest
-      #      ./gradlew native:NativeSampleApps:AppConfigurator:assembleAndroidTest
       - run: *store-gcloud-account
       - run: *gcloud-auth
       - run: *run-firebase-tests
@@ -255,17 +259,13 @@ jobs:
   test-SalesforceSDK-firebase:
     <<: *defaults
     environment:
+      - CURRENT_LIB: "SalesforceSDK"
       - TEST_APK: "libs/SalesforceSDK/build/outputs/apk/androidTest/debug/SalesforceSDK-debug-androidTest.apk"
-      - TEST_APP_APK: "native/NativeSampleApps/AppConfigurator/build/outputs/apk/androidTest/debug/AppConfigurator-debug-androidTest.apk"
+      - TEST_APP_APK: "native/NativeSampleApps/AppConfigurator/build/outputs/apk/debug/AppConfigurator-debug.apk"
     steps:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
       - restore_cache: *restore-ruby-cache
-      #- run:
-      #    name: Build for Testing
-      #    command:  |
-      #      ./gradlew :libs:SalesforceSDK:assembleAndroidtest
-      #      ./gradlew native:NativeSampleApps:AppConfigurator:assembleAndroidTest
       - run: *store-gcloud-account
       - run: *gcloud-auth
       - run: *run-firebase-tests
@@ -303,17 +303,13 @@ jobs:
   test-SmartStore-firebase:
     <<: *defaults
     environment:
+      - CURRENT_LIB: "SmartStore"
       - TEST_APK: "libs/SmartStore/build/outputs/apk/androidTest/debug/SmartStore-debug-androidTest.apk"
-      - TEST_APP_APK: "native/NativeSampleApps/SmartSyncExplorer/build/outputs/apk/androidTest/debug/SmartSyncExplorer-debug-androidTest.apk"
+      - TEST_APP_APK: "native/NativeSampleApps/AppConfigurator/build/outputs/apk/debug/AppConfigurator-debug.apk"
     steps:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
       - restore_cache: *restore-ruby-cache
-      #- run:
-      #    name: Build for Testing
-      #    command:  |
-      #      ./gradlew :libs:SmartStore:assembleAndroidtest
-      #      ./gradlew native:NativeSampleApps:SmartSyncExplorer:assembleAndroidTest
       - run: *store-gcloud-account
       - run: *gcloud-auth
       - run: *run-firebase-tests
@@ -351,17 +347,13 @@ jobs:
   test-SmartSync-firebase:
     <<: *defaults
     environment:
+      - CURRENT_LIB: "SmartSync"
       - TEST_APK: "libs/SmartSync/build/outputs/apk/androidTest/debug/SmartSync-debug-androidTest.apk"
-      - TEST_APP_APK: "native/NativeSampleApps/SmartSyncExplorer/build/outputs/apk/androidTest/debug/SmartSyncExplorer-debug-androidTest.apk"
+      - TEST_APP_APK: "native/NativeSampleApps/AppConfigurator/build/outputs/apk/debug/AppConfigurator-debug.apk"
     steps:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
       - restore_cache: *restore-ruby-cache
-      #- run:
-      #    name: Build for Testing
-      #    command:  |
-      #      ./gradlew :libs:SmartSync:assembleAndroidtest
-      #      ./gradlew native:NativeSampleApps:SmartSyncExplorer:assembleAndroidTest
       - run: *store-gcloud-account
       - run: *gcloud-auth
       - run: *run-firebase-tests
@@ -399,17 +391,13 @@ jobs:
   test-SalesforceHybrid-firebase:
     <<: *defaults
     environment:
-      - TEST_APK: "./hybrid/HybridSampleApps/SmartSyncExplorerHybrid/build/outputs/apk/androidTest/debug/SmartSyncExplorerHybrid-debug-androidTest.apk"
-      - TEST_APP_APK: "./libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk"
+      - CURRENT_LIB: "SalesforceHybrid"
+      - TEST_APK: "libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk"
+      - TEST_APP_APK: "native/NativeSampleApps/AppConfigurator/build/outputs/apk/debug/AppConfigurator-debug.apk" 
     steps:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
       - restore_cache: *restore-ruby-cache
-      #- run:
-      #    name: Build for Testing
-      #    command:  |
-      #      ./gradlew :libs:SalesforceHybrid:assembleAndroidtest
-      #      ./gradlew :hybrid:HybridSampleApps:SmartSyncExplorerHybrid:assembleAndroidTest
       - run: *store-gcloud-account
       - run: *gcloud-auth
       - run: *run-firebase-tests
@@ -447,15 +435,13 @@ jobs:
   test-RestExplorer-firebase:
     <<: *defaults
     environment:
+      - CURRENT_LIB: "RestExplorer"
       - TEST_APK: "native/NativeSampleApps/RestExplorer/build/outputs/apk/androidTest/debug/RestExplorer-debug-androidTest.apk"
-      - TEST_APP_APK: "./libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk"
+      - TEST_APP_APK: "native/NativeSampleApps/AppConfigurator/build/outputs/apk/debug/AppConfigurator-debug.apk"
     steps:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
-      - restore_cache: *restore-ruby-cache
-      #- run:
-      #    name: Build for Testing
-      #    command:  |      
+      - restore_cache: *restore-ruby-cache    
       - run: *store-gcloud-account
       - run: *gcloud-auth
       - run: *run-firebase-tests
@@ -493,16 +479,13 @@ jobs:
   test-SalesforceReact-firebase:
     <<: *defaults
     environment:
+      - CURRENT_LIB: "SalesforceReact"
       - TEST_APK: "libs/SalesforceReact/build/outputs/apk/androidTest/debug/SalesforceReact-debug-androidTest.apk"
-      - TEST_APP_APK: "./libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk"
+      - TEST_APP_APK: "native/NativeSampleApps/AppConfigurator/build/outputs/apk/debug/AppConfigurator-debug.apk"
     steps:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
       - restore_cache: *restore-ruby-cache
-      #- run:
-      #    name: Build for Testing
-      #    command:  |
-      #      ./gradlew libs:SalesforceReact:assembleAndroidTest
       - run: *store-gcloud-account
       - run: *gcloud-auth
       - run: *run-firebase-tests
@@ -609,21 +592,21 @@ workflows:
         - test-SalesforceAnalytics-firebase:
             requires:
                 - firebase-setup
-        #- test-SalesforceSDK-firebase:
-        #    requires:
-        #        - firebase-setup
-        #- test-SmartStore-firebase:
-        #    requires:
-        #        - firebase-setup
-        #- test-SmartSync-firebase:
-        #    requires:
-        #        - firebase-setup
-        #- test-SalesforceHybrid-firebase:
-        #    requires:
-        #        - firebase-setup
-        #- test-SalesforceReact-firebase:
-        #    requires:
-        #        - firebase-setup
-        #- test-RestExplorer-firebase:
-        #    requires:
-        #        - firebase-setup
+        - test-SalesforceSDK-firebase:
+            requires:
+                - firebase-setup
+        - test-SmartStore-firebase:
+            requires:
+                - firebase-setup
+        - test-SmartSync-firebase:
+            requires:
+                - firebase-setup
+        - test-SalesforceHybrid-firebase:
+            requires:
+                - firebase-setup
+        - test-SalesforceReact-firebase:
+            requires:
+                - firebase-setup
+        - test-RestExplorer-firebase:
+            requires:
+                - firebase-setup
