@@ -96,13 +96,14 @@ aliases:
     name: Copy test results data
     command: |
         mkdir -p firebase/results
-        gsutil -m cp -r -U "`gsutil ls gs://test-lab-`echo ${CIRCLE_JOB} awk -F'-' '{print $2}'`-${CIRCLE_BUILD_NUM} | tail -1`*" ./firebase/
+        gsutil -m cp -r -U "`gsutil ls gs://test-lab-${CURRENT_LIB}-${CIRCLE_BUILD_NUM}M} | tail -1`*" ./firebase/
         mv firebase/**/test_result_1.xml firebase/results
     when: always
     
   - &run-firebase-tests
     name: Test
     command: |
+
         gcloud firebase test android run \
             --project mobile-apps-firebase-test \
             --type instrumentation \
@@ -111,8 +112,8 @@ aliases:
             --device model=NexusLowRes,version=26,locale=en,orientation=portrait  \
             --environment-variables coverage=true,coverageFile=/sdcard/tmp/code-coverage/connected/coverage.ec  \
             --directories-to-pull=/sdcard/tmp  \
-            --results-dir=`echo ${CIRCLE_JOB} awk -F'-' '{print $2}'`-${CIRCLE_BUILD_NUM}
-            --results-history-name=`echo ${CIRCLE_JOB} awk -F'-' '{print $2}'`
+            --results-dir=${CURRENT_LIB}-${CIRCLE_BUILD_NUM}
+            --results-history-name=${CURRENT_LIB}
             --timeout 15m
     no_output_timeout: 900
 
@@ -204,6 +205,7 @@ jobs:
   test-SalesforceAnalytics-firebase:
     <<: *defaults
     environment:
+      - CURRENT_LIB: "SalesforceAnalytics"
       - TEST_APK: "libs/SalesforceAnalytics/build/outputs/apk/androidTest/debug/SalesforceAnalytics-debug-androidTest.apk"
       - TEST_APP_APK: "native/NativeSampleApps/AppConfigurator/build/outputs/apk/androidTest/debug/AppConfigurator-debug-androidTest.apk"
     steps:
