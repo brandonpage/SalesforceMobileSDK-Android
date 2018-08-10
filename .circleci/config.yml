@@ -103,9 +103,6 @@ aliases:
   - &run-firebase-tests
     name: Test
     command: |
-        gcloud version
-        gcloud components update
-        gcloud version
         gcloud firebase test android run \
             --project mobile-apps-firebase-test \
             --type instrumentation \
