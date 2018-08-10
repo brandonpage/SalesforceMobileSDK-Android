@@ -96,7 +96,7 @@ aliases:
     name: Copy test results data
     command: |
         mkdir -p firebase/results
-        gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw | tail -1`*" ./firebase/
+        gsutil -m cp -r -U "`gsutil ls gs://test-lab-`echo ${CIRCLE_JOB} awk -F'-' '{print $2}'`-${CIRCLE_BUILD_NUM} | tail -1`*" ./firebase/
         mv firebase/**/test_result_1.xml firebase/results
     when: always
     
@@ -176,7 +176,7 @@ jobs:
           paths:
             - ./**
 
-  test-SalesforceAnalytics-firebase:
+  test-SalesforceAnalytics:
     <<: *defaults
     environment:
       - CURRENT_LIB: "SalesforceAnalytics"
@@ -201,7 +201,7 @@ jobs:
       - run: *run-danger
       - run: *codecov
 
-  test-analytics-firebase:
+  test-SalesforceAnalytics-firebase:
     <<: *defaults
     environment:
       - TEST_APK: "libs/SalesforceAnalytics/build/outputs/apk/androidTest/debug/SalesforceAnalytics-debug-androidTest.apk"
