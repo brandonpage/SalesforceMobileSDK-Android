@@ -176,7 +176,7 @@ jobs:
           paths:
             - ./**
 
-  test-SalesforceAnalytics:
+  test-SalesforceAnalytics-firebase:
     <<: *defaults
     environment:
       - CURRENT_LIB: "SalesforceAnalytics"
