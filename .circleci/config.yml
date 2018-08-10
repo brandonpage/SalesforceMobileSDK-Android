@@ -178,7 +178,7 @@ jobs:
             ./gradlew libs:SalesforceHybrid:assembleAndroidTest
             ./gradlew libs:SalesforceReact:assembleAndroidTest
             ./gradlew native:NativeSampleApps:RestExplorer:assembleAndroidTest
-            ./gradlew native:NativeSampleApps:AppConfigurator:assembleDebug
+            ./gradlew :native:NativeSampleApps:RestExplorer:assembleDebug
       - persist_to_workspace:
           root: .
           paths:
@@ -214,7 +214,7 @@ jobs:
     environment:
       - CURRENT_LIB: "SalesforceAnalytics"
       - TEST_APK: "libs/SalesforceAnalytics/build/outputs/apk/androidTest/debug/SalesforceAnalytics-debug-androidTest.apk"
-      - TEST_APP_APK: "native/NativeSampleApps/AppConfigurator/build/outputs/apk/debug/AppConfigurator-debug.apk"
+      - TEST_APP_APK: "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk"
     steps:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
@@ -258,7 +258,7 @@ jobs:
     environment:
       - CURRENT_LIB: "SalesforceSDK"
       - TEST_APK: "libs/SalesforceSDK/build/outputs/apk/androidTest/debug/SalesforceSDK-debug-androidTest.apk"
-      - TEST_APP_APK: "native/NativeSampleApps/AppConfigurator/build/outputs/apk/debug/AppConfigurator-debug.apk"
+      - TEST_APP_APK: "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk"
     steps:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
@@ -302,7 +302,7 @@ jobs:
     environment:
       - CURRENT_LIB: "SmartStore"
       - TEST_APK: "libs/SmartStore/build/outputs/apk/androidTest/debug/SmartStore-debug-androidTest.apk"
-      - TEST_APP_APK: "native/NativeSampleApps/AppConfigurator/build/outputs/apk/debug/AppConfigurator-debug.apk"
+      - TEST_APP_APK: "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk"
     steps:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
@@ -346,7 +346,7 @@ jobs:
     environment:
       - CURRENT_LIB: "SmartSync"
       - TEST_APK: "libs/SmartSync/build/outputs/apk/androidTest/debug/SmartSync-debug-androidTest.apk"
-      - TEST_APP_APK: "native/NativeSampleApps/AppConfigurator/build/outputs/apk/debug/AppConfigurator-debug.apk"
+      - TEST_APP_APK: "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk"
     steps:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
@@ -390,7 +390,7 @@ jobs:
     environment:
       - CURRENT_LIB: "SalesforceHybrid"
       - TEST_APK: "libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk"
-      - TEST_APP_APK: "native/NativeSampleApps/AppConfigurator/build/outputs/apk/debug/AppConfigurator-debug.apk" 
+      - TEST_APP_APK: "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk" 
     steps:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
@@ -434,7 +434,7 @@ jobs:
     environment:
       - CURRENT_LIB: "RestExplorer"
       - TEST_APK: "native/NativeSampleApps/RestExplorer/build/outputs/apk/androidTest/debug/RestExplorer-debug-androidTest.apk"
-      - TEST_APP_APK: "native/NativeSampleApps/AppConfigurator/build/outputs/apk/debug/AppConfigurator-debug.apk"
+      - TEST_APP_APK: "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk"
     steps:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
@@ -478,7 +478,7 @@ jobs:
     environment:
       - CURRENT_LIB: "SalesforceReact"
       - TEST_APK: "libs/SalesforceReact/build/outputs/apk/androidTest/debug/SalesforceReact-debug-androidTest.apk"
-      - TEST_APP_APK: "native/NativeSampleApps/AppConfigurator/build/outputs/apk/debug/AppConfigurator-debug.apk"
+      - TEST_APP_APK: "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk"
     steps:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
