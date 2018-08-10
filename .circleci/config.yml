@@ -586,24 +586,24 @@ workflows:
   nightly-test:
      jobs:
         - firebase-setup
-        - test-SalesforceAnalytics-firebase:
-            requires:
-                - firebase-setup
-        - test-SalesforceSDK-firebase:
-            requires:
-                - firebase-setup
-        - test-SmartStore-firebase:
-            requires:
-                - firebase-setup
-        - test-SmartSync-firebase:
-            requires:
-                - firebase-setup
-        - test-SalesforceHybrid-firebase:
-            requires:
-                - firebase-setup
-        - test-SalesforceReact-firebase:
-            requires:
-                - firebase-setup
+        #- test-SalesforceAnalytics-firebase:
+        #    requires:
+        #        - firebase-setup
+        #- test-SalesforceSDK-firebase:
+        #    requires:
+        #        - firebase-setup
+        #- test-SmartStore-firebase:
+        #    requires:
+        #        - firebase-setup
+        #- test-SmartSync-firebase:
+        #    requires:
+        #        - firebase-setup
+        #- test-SalesforceHybrid-firebase:
+        #    requires:
+        #        - firebase-setup
+        #- test-SalesforceReact-firebase:
+        #    requires:
+        #        - firebase-setup
         - test-RestExplorer-firebase:
             requires:
                 - firebase-setup
