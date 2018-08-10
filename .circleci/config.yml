@@ -111,6 +111,8 @@ aliases:
             --device model=NexusLowRes,version=26,locale=en,orientation=portrait  \
             --environment-variables coverage=true,coverageFile=/sdcard/tmp/code-coverage/connected/coverage.ec  \
             --directories-to-pull=/sdcard/tmp  \
+            --results-dir=`echo ${CIRCLE_JOB} awk -F'-' '{print $2}'`-${CIRCLE_BUILD_NUM}
+            --results-history-name=`echo ${CIRCLE_JOB} awk -F'-' '{print $2}'`
             --timeout 15m
     no_output_timeout: 900
 
@@ -604,21 +606,21 @@ workflows:
         - test-SalesforceAnalytics-firebase:
             requires:
                 - firebase-setup
-        - test-SalesforceSDK-firebase:
-            requires:
-                - firebase-setup
-        - test-SmartStore-firebase:
-            requires:
-                - firebase-setup
-        - test-SmartSync-firebase:
-            requires:
-                - firebase-setup
-        - test-SalesforceHybrid-firebase:
-            requires:
-                - firebase-setup
-        - test-SalesforceReact-firebase:
-            requires:
-                - firebase-setup
-        - test-RestExplorer-firebase:
-            requires:
-                - firebase-setup
+        #- test-SalesforceSDK-firebase:
+        #    requires:
+        #        - firebase-setup
+        #- test-SmartStore-firebase:
+        #    requires:
+        #        - firebase-setup
+        #- test-SmartSync-firebase:
+        #    requires:
+        #        - firebase-setup
+        #- test-SalesforceHybrid-firebase:
+        #    requires:
+        #        - firebase-setup
+        #- test-SalesforceReact-firebase:
+        #    requires:
+        #        - firebase-setup
+        #- test-RestExplorer-firebase:
+        #    requires:
+        #        - firebase-setup
