@@ -115,7 +115,7 @@ aliases:
             --environment-variables coverage=true,coverageFile=/sdcard/tmp/code-coverage/connected/coverage.ec  \
             --directories-to-pull=/sdcard/tmp  \
             --results-dir=${CURRENT_LIB}-${CIRCLE_BUILD_NUM}
-            --results-history-name="${CURRENT_LIB}" 
+            --results-history-name=`echo ${CURRENT_LIB}` 
             --timeout 15m
     no_output_timeout: 900
 
