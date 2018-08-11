@@ -231,7 +231,8 @@ jobs:
       - CURRENT_LIB: "RestExplorer"
       - TEST_APK: "native/NativeSampleApps/RestExplorer/build/outputs/apk/androidTest/debug/RestExplorer-debug-androidTest.apk"
     steps:
-      - *attach_workspace    
+      - *attach_workspace   
+      - run: *determine-tests-to-run 
       - run: *gcloud-auth
       - run: *run-firebase-tests
       - store_artifacts:
@@ -350,34 +351,33 @@ workflows:
   version: 2
 
   pr-test:
+    triggers:
+       - schedule:
+           filters:
+             branches:
+               only:
+                 - /pull*/
     jobs:  
       - setup
       - test-SalesforceAnalytics:
-          context: android-api-27
           requires:
             - setup
       - test-SalesforceSDK:
-          context: android-api-27
           requires:
             - setup
       - test-SmartStore:
-          context: android-api-27
           requires:
             - setup
       - test-SmartSync:
-          context: android-api-27
           requires:
               - setup
       - test-SalesforceHybrid:
-          context: android-api-27
           requires:
               - setup
       - test-RestExplorer:
-          context: android-api-27
           requires:
               - setup
       - test-SalesforceReact:
-          context: android-api-27
           requires:
               - setup
 
@@ -386,7 +386,7 @@ workflows:
   nightly-test:
      triggers:
        - schedule:
-           cron: "25 2 * * *"
+           cron: "48 3 * * *"
            filters:
              branches:
                only:
@@ -395,30 +395,30 @@ workflows:
         - generate-artifacts
         - setup
         - test-SalesforceAnalytics:
-            context: android-api-21
+            context: nightly-test
             requires:
                 - setup
         - test-SalesforceSDK:
-            context: android-api-21
+            context: nightly-test
             requires:
                 - setup
         - test-SmartStore:
-            context: android-api-21
+            context: nightly-test
             requires:
                 - setup
         - test-SmartSync:
-            context: android-api-21
+            context: nightly-test
             requires:
                 - setup
         - test-SalesforceHybrid:
-            context: android-api-21
+            context: nightly-test
             requires:
                 - setup
         - test-RestExplorer:
-            context: android-api-21
+            context: nightly-test
             requires:
                 - setup
         - test-SalesforceReact:
-            context: android-api-21
+            context: nightly-test
             requires:
                 - setup
