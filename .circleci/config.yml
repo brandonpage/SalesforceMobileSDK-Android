@@ -351,14 +351,12 @@ workflows:
   version: 2
 
   pr-test:
-    triggers:
-       - schedule:
+    jobs:  
+      - setup:
            filters:
              branches:
                only:
                  - /pull*/
-    jobs:  
-      - setup
       - test-SalesforceAnalytics:
           requires:
             - setup
@@ -386,7 +384,7 @@ workflows:
   nightly-test:
      triggers:
        - schedule:
-           cron: "48 3 * * *"
+           cron: "50 3 * * *"
            filters:
              branches:
                only:
