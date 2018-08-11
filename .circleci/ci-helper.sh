@@ -28,24 +28,35 @@ function printTestsToRun {
             echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
         else
             echo -e "\n\nNothing to Test."
+            circleci step halt
         fi
     else
         echo -e "\n\nNot a PR -> skip tests."
+        circleci step halt
     fi
 }
 
 function runTests {
     if ([ -n "$NIGHTLY_TEST" ] || ([ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]])); then
+        
+        if ([ -n "$CIRCLE_PULL_REQUEST" ]); then
+            android_api=27
+        else
+            # Run API 21 on Mon, 23 on Wed, 25 on Fri
+            android_api=(19 + $(date +"%u"))        
+        fi
+
+        [[ $android_api < 23 ]] && device="Nexus6" || device="NexusLowRes"
         gcloud firebase test android run \
             --project mobile-apps-firebase-test \
             --type instrumentation \
             --app "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk" \
             --test ${TEST_APK}  \
-            --device model=NexusLowRes,version=${ANDROID_API},locale=en,orientation=portrait  \
+            --device model=$device,version=$android_api,locale=en,orientation=portrait  \
             --environment-variables coverage=true,coverageFile=/sdcard/tmp/code-coverage/connected/coverage.ec  \
             --directories-to-pull=/sdcard/tmp  \
             --results-dir=${CURRENT_LIB}-${CIRCLE_BUILD_NUM}  \
-            --results-history-name=`echo ${CURRENT_LIB}`  \
+            --results-history-name=${CURRENT_LIB}  \
             --timeout 15m
 
         mkdir -p firebase/results
