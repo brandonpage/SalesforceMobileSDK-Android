@@ -63,19 +63,19 @@ function runTests {
         --results-dir=${CURRENT_LIB}-${CIRCLE_BUILD_NUM}  \
         --results-history-name=${CURRENT_LIB}  \
         --timeout 15m
-
-    mkdir -p firebase/results
-    gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${CURRENT_LIB}-${CIRCLE_BUILD_NUM} | tail -1`*" ./firebase/
-    mv firebase/test_result_1.xml firebase/results
 }
 
 function runDanger {
-    if [ -z "${CURRENT_LIB}" ]; then
-        DANGER_GITHUB_API_TOKEN="5d42eadf98c58c9c4f60""7fcfc72cee4c7ef1486b" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
-    else
-        if ls libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/*.xml 1> /dev/null 2>&1; then
-            mv libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/*.xml libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/test-results.xml
+    if [[ $CIRCLE_BRANCH == *"pull"* ]]; then
+        if [ -z "${CURRENT_LIB}" ]; then
+            DANGER_GITHUB_API_TOKEN="5d42eadf98c58c9c4f60""7fcfc72cee4c7ef1486b" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
+        else
+            if ls libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/*.xml 1> /dev/null 2>&1; then
+                mv libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/*.xml libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/test-results.xml
+            fi
+            DANGER_GITHUB_API_TOKEN="5d42eadf98c58c9c4f60""7fcfc72cee4c7ef1486b" danger --dangerfile=.circleci/Dangerfile_Lib.rb --danger_id="${CURRENT_LIB}" --verbose
         fi
-        DANGER_GITHUB_API_TOKEN="5d42eadf98c58c9c4f60""7fcfc72cee4c7ef1486b" danger --dangerfile=.circleci/Dangerfile_Lib.rb --danger_id="${CURRENT_LIB}" --verbose
+    else
+        echo "No need to run Danger."
     fi
 }

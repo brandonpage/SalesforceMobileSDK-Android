@@ -150,6 +150,7 @@ jobs:
       - run: *determine-tests-to-run
       - run: *gcloud-auth
       - run: *run-firebase-tests
+      - run: *get-firebase-results
       - store_artifacts:
             path: firebase/
       - store_test_results:
@@ -167,6 +168,7 @@ jobs:
       - run: *determine-tests-to-run
       - run: *gcloud-auth
       - run: *run-firebase-tests
+      - run: *get-firebase-results
       - store_artifacts:
             path: firebase/
       - store_test_results:
@@ -184,6 +186,7 @@ jobs:
       - run: *determine-tests-to-run
       - run: *gcloud-auth
       - run: *run-firebase-tests
+      - run: *get-firebase-results
       - store_artifacts:
             path: firebase/
       - store_test_results:
@@ -201,6 +204,7 @@ jobs:
       - run: *determine-tests-to-run
       - run: *gcloud-auth
       - run: *run-firebase-tests
+      - run: *get-firebase-results
       - store_artifacts:
             path: firebase/
       - store_test_results:
@@ -218,6 +222,7 @@ jobs:
       - run: *determine-tests-to-run
       - run: *gcloud-auth
       - run: *run-firebase-tests
+      - run: *get-firebase-results
       - store_artifacts:
           path: firebase/
       - store_test_results:
@@ -235,6 +240,7 @@ jobs:
       - run: *determine-tests-to-run 
       - run: *gcloud-auth
       - run: *run-firebase-tests
+      - run: *get-firebase-results
       - store_artifacts:
             path: firebase/
       - store_test_results:
@@ -252,6 +258,7 @@ jobs:
       - run: *determine-tests-to-run
       - run: *gcloud-auth
       - run: *run-firebase-tests
+      - run: *get-firebase-results
       - store_artifacts:
             path: firebase/
       - store_test_results:
@@ -384,7 +391,7 @@ workflows:
   nightly-test:
      triggers:
        - schedule:
-           cron: "50 3 * * *"
+           cron: "48 4 * * *"
            filters:
              branches:
                only:
