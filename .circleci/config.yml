@@ -391,39 +391,14 @@ workflows:
   nightly-test:
      triggers:
        - schedule:
-           cron: "48 4 * * *"
+           cron: "30 16 * * *"
            filters:
              branches:
                only:
                  - firebase-test
      jobs:
-        - generate-artifacts
         - setup
         - test-SalesforceAnalytics:
-            context: nightly-test
-            requires:
-                - setup
-        - test-SalesforceSDK:
-            context: nightly-test
-            requires:
-                - setup
-        - test-SmartStore:
-            context: nightly-test
-            requires:
-                - setup
-        - test-SmartSync:
-            context: nightly-test
-            requires:
-                - setup
-        - test-SalesforceHybrid:
-            context: nightly-test
-            requires:
-                - setup
-        - test-RestExplorer:
-            context: nightly-test
-            requires:
-                - setup
-        - test-SalesforceReact:
             context: nightly-test
             requires:
                 - setup
