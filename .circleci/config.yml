@@ -396,7 +396,7 @@ workflows:
   nightly-test:
      triggers:
        - schedule:
-           cron: "25 17 * * *"
+           cron: "37 17 * * *"
            filters:
              branches:
                only:
