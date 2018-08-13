@@ -59,7 +59,7 @@ function runTests {
         --test ${TEST_APK}  \
         --device model=$device,version=$android_api,locale=en,orientation=portrait  \
         --environment-variables coverage=true,coverageFile="/sdcard/coverage.ec"  \
-        --directories-to-pull /sdcard  \
+        --directories-to-pull=/sdcard  \
         --results-dir=${CURRENT_LIB}-${CIRCLE_BUILD_NUM}  \
         --results-history-name=${CURRENT_LIB}  \
         --timeout 15m
