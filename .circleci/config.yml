@@ -127,12 +127,6 @@ jobs:
           name: Build for Testing
           command:  |
             ./gradlew libs:SalesforceAnalytics:assembleAndroidTest
-            ./gradlew libs:SalesforceSDK:assembleAndroidTest
-            ./gradlew libs:SmartStore:assembleAndroidTest
-            ./gradlew libs:SmartSync:assembleAndroidTest
-            ./gradlew libs:SalesforceHybrid:assembleAndroidTest
-            ./gradlew libs:SalesforceReact:assembleAndroidTest
-            ./gradlew native:NativeSampleApps:RestExplorer:assembleAndroidTest
             ./gradlew :native:NativeSampleApps:RestExplorer:assembleDebug
       - run: *run-danger
       - persist_to_workspace:
@@ -391,7 +385,7 @@ workflows:
   nightly-test:
      triggers:
        - schedule:
-           cron: "30 16 * * *"
+           cron: "48 16 * * *"
            filters:
              branches:
                only:

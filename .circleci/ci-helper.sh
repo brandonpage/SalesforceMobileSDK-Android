@@ -48,7 +48,7 @@ function runTests {
         android_api=27
     else
         # Run API 21 on Mon, 23 on Wed, 25 on Fri
-        android_api=$((19 + $(date +"%u")))      
+        android_api=$((20 + $(date +"%u")))      
     fi
 
     [[ $android_api < 23 ]] && device="Nexus6" || device="NexusLowRes"
