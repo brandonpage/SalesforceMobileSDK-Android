@@ -68,12 +68,16 @@ aliases:
     command: bash <(curl -s https://codecov.io/bash)
     when: always
 
+  - &build-for-testing
+    name: Build For Testing
+    command: ./gradlew libs:${CURRENT_LIB}:assembleAndroidTest
+
   - &gcloud-auth
     name: Authorize gcloud and set config defaults
     command:  |
-        echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json 
+        echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
         gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
-        gcloud --quiet config set project mobile-apps-firebase-test 
+        gcloud --quiet config set project mobile-apps-firebase-test
 
   - &get-firebase-results
     name: Copy test results data
@@ -82,7 +86,7 @@ aliases:
         gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${CURRENT_LIB}-${CIRCLE_BUILD_NUM} | tail -1`*" ./firebase/
         mv firebase/test_result_1.xml firebase/results
     when: always
-    
+
   - &run-firebase-tests
     name: Run Tests
     command: source .circleci/ci-helper.sh && runTests
@@ -127,6 +131,8 @@ jobs:
           name: Build for Testing
           command:  |
             ./gradlew libs:SalesforceAnalytics:assembleAndroidTest
+            ./gradlew libs:SalesforceSDK:assembleAndroidTest
+            ./gradlew native:NativeSampleApps:RestExplorer:assembleAndroidTest
             ./gradlew :native:NativeSampleApps:RestExplorer:assembleDebug
       - run: *run-danger
       - persist_to_workspace:
@@ -148,9 +154,9 @@ jobs:
       - store_artifacts:
             path: firebase/
       - store_test_results:
-            path: firebase/results  
+            path: firebase/results
       - run: *run-danger
-      - run: *codecov            
+      - run: *codecov
 
   test-SalesforceSDK:
     <<: *defaults
@@ -178,6 +184,7 @@ jobs:
     steps:
       - *attach_workspace
       - run: *determine-tests-to-run
+      - run: *build-for-testing
       - run: *gcloud-auth
       - run: *run-firebase-tests
       - run: *get-firebase-results
@@ -196,42 +203,7 @@ jobs:
     steps:
       - *attach_workspace
       - run: *determine-tests-to-run
-      - run: *gcloud-auth
-      - run: *run-firebase-tests
-      - run: *get-firebase-results
-      - store_artifacts:
-            path: firebase/
-      - store_test_results:
-            path: firebase/results  
-      - run: *run-danger
-      - run: *codecov
-
-  test-SalesforceHybrid:
-    <<: *defaults
-    environment:
-      - CURRENT_LIB: "SalesforceHybrid"
-      - TEST_APK: "libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk" 
-    steps:
-      - *attach_workspace
-      - run: *determine-tests-to-run
-      - run: *gcloud-auth
-      - run: *run-firebase-tests
-      - run: *get-firebase-results
-      - store_artifacts:
-          path: firebase/
-      - store_test_results:
-          path: firebase/results  
-      - run: *run-danger
-      - run: *codecov
-
-  test-RestExplorer:
-    <<: *defaults
-    environment:
-      - CURRENT_LIB: "RestExplorer"
-      - TEST_APK: "native/NativeSampleApps/RestExplorer/build/outputs/apk/androidTest/debug/RestExplorer-debug-androidTest.apk"
-    steps:
-      - *attach_workspace   
-      - run: *determine-tests-to-run 
+      - run: *build-for-testing
       - run: *gcloud-auth
       - run: *run-firebase-tests
       - run: *get-firebase-results
@@ -239,6 +211,25 @@ jobs:
             path: firebase/
       - store_test_results:
             path: firebase/results
+      - run: *run-danger
+      - run: *codecov
+
+  test-SalesforceHybrid:
+    <<: *defaults
+    environment:
+      - CURRENT_LIB: "SalesforceHybrid"
+      - TEST_APK: "libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk"
+    steps:
+      - *attach_workspace
+      - run: *determine-tests-to-run
+      - run: *build-for-testing
+      - run: *gcloud-auth
+      - run: *run-firebase-tests
+      - run: *get-firebase-results
+      - store_artifacts:
+          path: firebase/
+      - store_test_results:
+          path: firebase/results
       - run: *run-danger
       - run: *codecov
 
@@ -250,6 +241,7 @@ jobs:
     steps:
       - *attach_workspace
       - run: *determine-tests-to-run
+      - run: *build-for-testing
       - run: *gcloud-auth
       - run: *run-firebase-tests
       - run: *get-firebase-results
@@ -259,6 +251,25 @@ jobs:
             path: firebase/results
       - run: *run-danger
       - run: *codecov
+
+  test-RestExplorer:
+    <<: *defaults
+    environment:
+      - CURRENT_LIB: "RestExplorer"
+      - TEST_APK: "native/NativeSampleApps/RestExplorer/build/outputs/apk/androidTest/debug/RestExplorer-debug-androidTest.apk"
+    steps:
+      - *attach_workspace
+      - run: *determine-tests-to-run
+      - run: *gcloud-auth
+      - run: *run-firebase-tests
+      - run: *get-firebase-results
+      - store_artifacts:
+            path: firebase/
+      - store_test_results:
+            path: firebase/results
+      - run: *run-danger
+      - run: *codecov
+
 
 
 ##########################
@@ -385,7 +396,7 @@ workflows:
   nightly-test:
      triggers:
        - schedule:
-           cron: "48 16 * * *"
+           cron: "23 17 * * *"
            filters:
              branches:
                only:
