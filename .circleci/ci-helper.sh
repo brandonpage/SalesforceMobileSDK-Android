@@ -30,16 +30,16 @@ function printTestsToRun {
             echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
 
             # Check if this is a test job that should continue
-            if [[ -z ${CURRENT_LIB} ]] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
-                circleci step halt
-            fi
+            #if [[ -z ${CURRENT_LIB} ]] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+            #    circleci step halt
+            #fi
         else
             echo -e "\n\nNothing to Test."
-            circleci step halt
+            #circleci step halt
         fi
     else
         echo -e "\n\nNot a PR -> skip tests."
-        circleci step halt
+        #circleci step halt
     fi
 }
 
