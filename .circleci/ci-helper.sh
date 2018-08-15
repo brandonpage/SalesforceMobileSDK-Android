@@ -18,8 +18,6 @@ function envSetup {
 function printTestsToRun {
     if [ -n "$NIGHTLY_TEST" ]; then
         echo -e "\n\nNightly -> Run everything."
-
-    # Check branch name since PR env vars are not present on manual re-runs.
     else
         LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
         echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
@@ -58,6 +56,11 @@ function runTests {
 
 function runDanger {
     if [[ $CIRCLE_BRANCH == *"pull"* ]]; then
+	export CIRCLE_PULL_REQUEST=true
+	export CIRCLE_PULL_REQUESTS=true
+	export CI_PULL_REQUEST=true
+	export CI_PULL_REQUESTS=true
+
         if [ -z "${CURRENT_LIB}" ]; then
             DANGER_GITHUB_API_TOKEN="b676bc92bde5202b94d0""ec8dfecb2716044bf523" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
         else
