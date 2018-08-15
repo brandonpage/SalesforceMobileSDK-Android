@@ -371,10 +371,10 @@ workflows:
   pr-test:
     jobs:  
       - setup:
-           filters:
-             branches:
-               only:
-                 - /pull*/
+          filters:
+            branches:
+              only:
+                - /pull*/
       - test-SalesforceAnalytics:
           requires:
             - setup
