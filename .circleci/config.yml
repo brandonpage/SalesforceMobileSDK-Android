@@ -126,12 +126,12 @@ jobs:
       - restore_cache: *restore-node-cache
       - restore_cache: *restore-ruby-cache
       - run: *setup-env
-      - run: *android-lint
+      #- run: *android-lint
       - run:
           name: Build for Testing
           command:  |
             ./gradlew libs:SalesforceAnalytics:assembleAndroidTest
-            ./gradlew libs:SalesforceSDK:assembleAndroidTest
+            #./gradlew libs:SalesforceSDK:assembleAndroidTest
             ./gradlew native:NativeSampleApps:RestExplorer:assembleAndroidTest
             ./gradlew :native:NativeSampleApps:RestExplorer:assembleDebug
       - run: *run-danger
@@ -148,9 +148,9 @@ jobs:
     steps:
       - *attach_workspace
       - run: *determine-tests-to-run
-      - run: *gcloud-auth
-      - run: *run-firebase-tests
-      - run: *get-firebase-results
+      #- run: *gcloud-auth
+      #- run: *run-firebase-tests
+      #- run: *get-firebase-results
       - store_artifacts:
             path: firebase/
       - store_test_results:
