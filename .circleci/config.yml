@@ -365,69 +365,28 @@ workflows:
   pr-test:
     jobs:  
       - setup:
-           filters:
-             branches:
-               only:
-                 - /pull*/
+           #filters:
+           #  branches:
+           #    only:
+           #      - /pull*/
       - test-SalesforceAnalytics:
           requires:
             - setup
-      - test-SalesforceSDK:
-          requires:
-            - setup
-      - test-SmartStore:
-          requires:
-            - setup
-      - test-SmartSync:
-          requires:
-              - setup
-      - test-SalesforceHybrid:
-          requires:
-              - setup
-      - test-RestExplorer:
-          requires:
-              - setup
-      - test-SalesforceReact:
-          requires:
-              - setup
-
- # Cron are on a timezone 8 hours ahead of PST
- # Nightly run is set for ~10PM Monday - Friday
-  nightly-test:
-     triggers:
-       - schedule:
-           cron: "37 17 * * *"
-           filters:
-             branches:
-               only:
-                 - firebase-test
-     jobs:
-        - setup
-        - test-SalesforceAnalytics:
-            context: nightly-test
-            requires:
-                - setup
-        - test-SalesforceSDK:
-            context: nightly-test
-            requires:
-                - setup
-        - test-SmartStore:
-            context: nightly-test
-            requires:
-                - setup
-        - test-SmartSync:
-            context: nightly-test
-            requires:
-                - setup
-        - test-SalesforceHybrid:
-            context: nightly-test
-            requires:
-                - setup
-        - test-SalesforceReact:
-            context: nightly-test
-            requires:
-                - setup
-        - test-RestExplorer:
-            context: nightly-test
-            requires:
-                - setup
+      #- test-SalesforceSDK:
+      #    requires:
+      #      - setup
+      #- test-SmartStore:
+      #    requires:
+      #      - setup
+      #- test-SmartSync:
+      #    requires:
+      #        - setup
+      #- test-SalesforceHybrid:
+      #    requires:
+      #        - setup
+      #- test-RestExplorer:
+      #    requires:
+      #        - setup
+      #- test-SalesforceReact:
+      #    requires:
+      #        - setup

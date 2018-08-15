@@ -66,7 +66,7 @@ function runTests {
 }
 
 function runDanger {
-    if [[ $CIRCLE_BRANCH == *"pull"* ]]; then
+    #if [[ $CIRCLE_BRANCH == *"pull"* ]]; then
         if [ -z "${CURRENT_LIB}" ]; then
             DANGER_GITHUB_API_TOKEN="5d42eadf98c58c9c4f60""7fcfc72cee4c7ef1486b" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
         else
@@ -75,7 +75,7 @@ function runDanger {
             fi
             DANGER_GITHUB_API_TOKEN="5d42eadf98c58c9c4f60""7fcfc72cee4c7ef1486b" danger --dangerfile=.circleci/Dangerfile_Lib.rb --danger_id="${CURRENT_LIB}" --verbose
         fi
-    else
-        echo "No need to run Danger."
-    fi
+    #else
+    #    echo "No need to run Danger."
+    #fi
 }
