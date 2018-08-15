@@ -135,6 +135,9 @@ jobs:
             ./gradlew native:NativeSampleApps:RestExplorer:assembleAndroidTest
             ./gradlew :native:NativeSampleApps:RestExplorer:assembleDebug
       - run: *run-danger
+      - save_cache: *save-gradle-cache
+      - save_cache: *save-node-cache
+      - save_cache: *save-ruby-cache
       - persist_to_workspace:
           root: .
           paths:
@@ -147,6 +150,7 @@ jobs:
       - TEST_APK: "libs/SalesforceAnalytics/build/outputs/apk/androidTest/debug/SalesforceAnalytics-debug-androidTest.apk"
     steps:
       - *attach_workspace
+      - run: *restore-ruby-cache
       - run: *determine-tests-to-run
       #- run: *gcloud-auth
       #- run: *run-firebase-tests
