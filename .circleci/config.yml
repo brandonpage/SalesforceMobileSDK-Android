@@ -150,7 +150,9 @@ jobs:
       - TEST_APK: "libs/SalesforceAnalytics/build/outputs/apk/androidTest/debug/SalesforceAnalytics-debug-androidTest.apk"
     steps:
       - *attach_workspace
-      - run: *restore-ruby-cache
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       #- run: *gcloud-auth
       #- run: *run-firebase-tests
