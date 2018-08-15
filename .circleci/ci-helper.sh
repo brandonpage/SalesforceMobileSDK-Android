@@ -66,14 +66,19 @@ function runTests {
 }
 
 function runDanger {
+    ruby -v
+    gem list
+
     #if [[ $CIRCLE_BRANCH == *"pull"* ]]; then
         if [ -z "${CURRENT_LIB}" ]; then
-            DANGER_GITHUB_API_TOKEN="5d42eadf98c58c9c4f60""7fcfc72cee4c7ef1486b" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
+            export DANGER_GITHUB_API_TOKEN="5d42eadf98c58c9c4f607fcfc72cee4c7ef1486b" 
+            danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
         else
             if ls libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/*.xml 1> /dev/null 2>&1; then
                 mv libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/*.xml libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/test-results.xml
             fi
-            DANGER_GITHUB_API_TOKEN="5d42eadf98c58c9c4f60""7fcfc72cee4c7ef1486b" danger --dangerfile=.circleci/Dangerfile_Lib.rb --danger_id="${CURRENT_LIB}" --verbose
+            export DANGER_GITHUB_API_TOKEN="5d42eadf98c58c9c4f607fcfc72cee4c7ef1486b" 
+            danger --dangerfile=.circleci/Dangerfile_Lib.rb --danger_id="${CURRENT_LIB}" --verbose
         fi
     #else
     #    echo "No need to run Danger."
