@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 function envSetup {
+    sudo npm i npm@latest -g
     sudo npm install -g shelljs@0.7.0
     sudo npm install -g cordova@8.0.0
     cordova telemetry off
