@@ -33,11 +33,11 @@ function printTestsToRun {
 }
 
 function runTests {
-    if ([ -n "$CIRCLE_PULL_REQUEST" ]); then
-        android_api=27
-    else
+    if [[ $CIRCLE_BRANCH == *"pull"* ]]; then
         # Run API 21 on Mon, 23 on Wed, 25 on Fri
         android_api=$((19 + $(date +"%u")))
+    else
+        android_api=27
     fi
 
     [[ $android_api < 23 ]] && device="Nexus6" || device="NexusLowRes"
@@ -56,10 +56,11 @@ function runTests {
 
 function runDanger {
     if [[ $CIRCLE_BRANCH == *"pull"* ]]; then
-	export CIRCLE_PULL_REQUEST=true
-	export CIRCLE_PULL_REQUESTS=true
-	export CI_PULL_REQUEST=true
-	export CI_PULL_REQUESTS=true
+        # FIX THIS BEFORE FORCEDOTCOM PR
+        export CIRCLE_PULL_REQUEST="https://github.com/brandonpage/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
+        export CIRCLE_PULL_REQUESTS="https://github.com/brandonpage/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
+        export CI_PULL_REQUEST="https://github.com/brandonpage/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
+        export CI_PULL_REQUESTS="https://github.com/brandonpage/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
 
         if [ -z "${CURRENT_LIB}" ]; then
             DANGER_GITHUB_API_TOKEN="b676bc92bde5202b94d0""ec8dfecb2716044bf523" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
