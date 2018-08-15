@@ -2,14 +2,14 @@
 # inspired by https://github.com/Originate/guide/blob/master/android/guide/Continuous%20Integration.md
 
 function envSetup {
-    sudo apt-get update
-    sudo apt-get install libqt5widgets5
+    #sudo apt-get update
+    #sudo apt-get install libqt5widgets5
     sudo npm install -g shelljs@0.7.0
     sudo npm install -g cordova@8.0.0
     cordova telemetry off
 
     ./install.sh
-    ./gradlew androidDependencies
+    #./gradlew androidDependencies
 
     gem install bundler
     gem install danger
@@ -66,9 +66,6 @@ function runTests {
 }
 
 function runDanger {
-    ruby -v
-    gem list
-
     #if [[ $CIRCLE_BRANCH == *"pull"* ]]; then
         if [ -z "${CURRENT_LIB}" ]; then
             export DANGER_GITHUB_API_TOKEN="5d42eadf98c58c9c4f607fcfc72cee4c7ef1486b" 
