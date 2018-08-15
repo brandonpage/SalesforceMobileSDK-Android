@@ -126,7 +126,7 @@ jobs:
       - restore_cache: *restore-node-cache
       - restore_cache: *restore-ruby-cache
       - run: *setup-env
-      #- run: *android-lint
+      - run: *android-lint
       - run:
           name: Build for Testing
           command:  |
@@ -370,11 +370,11 @@ workflows:
 
   pr-test:
     jobs:  
-      - setup
-           #filters:
-           #  branches:
-           #    only:
-           #      - /pull*/
+      - setup:
+           filters:
+             branches:
+               only:
+                 - /pull*/
       - test-SalesforceAnalytics:
           requires:
             - setup
