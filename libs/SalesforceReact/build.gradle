@@ -21,6 +21,7 @@ buildscript {
 }
 
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
 apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
@@ -37,6 +38,8 @@ dependencies {
     } else {
         androidTestImplementation 'org.webkit:android-jsc:+'
     }
+    implementation "androidx.core:core-ktx:+"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
 }
 
@@ -187,4 +190,7 @@ bintray {
             vcsTag = 'v9.1.0'
         }
     }
+}
+repositories {
+    mavenCentral()
 }

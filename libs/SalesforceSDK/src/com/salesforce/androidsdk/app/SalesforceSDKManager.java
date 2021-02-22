@@ -73,7 +73,9 @@ import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
+import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
+import com.salesforce.androidsdk.ui.ScreenLockActivity;
 import com.salesforce.androidsdk.ui.DevInfoActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
@@ -148,8 +150,10 @@ public class SalesforceSDKManager {
     private final Class<? extends Activity> mainActivityClass;
     private Class<? extends Activity> loginActivityClass = LoginActivity.class;
     private Class<? extends PasscodeActivity> passcodeActivityClass = PasscodeActivity.class;
+    private Class<? extends ScreenLockActivity> screenLockActivityClass = ScreenLockActivity.class;
     private Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
     private PasscodeManager passcodeManager;
+    private ScreenLockManager screenLockManager;
     private LoginServerManager loginServerManager;
     private boolean isTestRun = false;
 	private boolean isLoggingOut = false;
@@ -179,6 +183,13 @@ public class SalesforceSDKManager {
      * PasscodeManager object lock.
      */
     private final Object passcodeManagerLock = new Object();
+
+    /**
+     * ScreenLockManager object lock.
+     */
+    private final Object screenLockManagerLock = new Object();
+
+
 
     /**
      * Dev support
@@ -417,6 +428,15 @@ public class SalesforceSDKManager {
     }
 
     /**
+     * Returns the descriptor of the passcode activity class that's currently in use.
+     *
+     * @return Passcode activity class descriptor.
+     */
+    public Class<? extends ScreenLockActivity> getScreenLockActivity() {
+        return screenLockActivityClass;
+    }
+
+    /**
      * Indicates whether the SDK should automatically log out when the
      * access token is revoked. If you override this method to return
      * false, your app is responsible for handling its own cleanup when the
@@ -523,6 +543,20 @@ public class SalesforceSDKManager {
             }
             return passcodeManager;
 		}
+    }
+
+    /**
+     * Returns the screen lock manager that's associated with SalesforceSDKManager.
+     *
+     * @return ScreenLockManager instance.
+     */
+    public ScreenLockManager getScreenLockManager() {
+        synchronized (screenLockManagerLock) {
+            if (screenLockManager == null) {
+                screenLockManager = new ScreenLockManager(context);
+            }
+            return screenLockManager;
+        }
     }
 
 	/**
@@ -755,6 +789,9 @@ public class SalesforceSDKManager {
             adminPermsManager = null;
             getPasscodeManager().reset(context);
             passcodeManager = null;
+
+            getScreenLockManager().reset();
+            screenLockManager = null;
         }
     }
 
@@ -767,6 +804,7 @@ public class SalesforceSDKManager {
         SalesforceAnalyticsManager.reset(userAccount);
         RestClient.clearCaches(userAccount);
         UserAccountManager.getInstance().clearCachedCurrentUser();
+        getScreenLockManager().cleanUp(userAccount);
     }
 
     /**

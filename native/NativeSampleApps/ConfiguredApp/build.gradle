@@ -1,7 +1,10 @@
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
 
 dependencies {
     api project(':libs:SalesforceSDK')
+    implementation "androidx.core:core-ktx:+"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }
 
 android {
@@ -34,4 +37,7 @@ android {
     xmlReport true
     abortOnError false
   }
+}
+repositories {
+    mavenCentral()
 }

@@ -70,6 +70,7 @@ import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.PasscodeManager;
+import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.MapUtil;
@@ -632,6 +633,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 final PasscodeManager passcodeManager = mgr.getPasscodeManager();
                 passcodeManager.storeMobilePolicyForOrg(account, 0, PasscodeManager.MIN_PASSCODE_LENGTH , true);
             }
+
+            final ScreenLockManager screenLockManager = mgr.getScreenLockManager();
+            screenLockManager.storeMobilePolicyForOrg(account, id.mobilePolicy);
 
             // All done
             callback.finish(account);

@@ -40,6 +40,12 @@
             android:windowSoftInputMode="adjustResize|stateAlwaysVisible"
             android:theme="@style/SalesforceSDK.Passcode" />
 
+        <activity android:name="com.salesforce.androidsdk.ui.ScreenLockActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize|stateAlwaysVisible"
+            android:theme="@style/SalesforceSDK.Passcode" />
+
         <!-- Manage space activity -->
         <activity android:name="com.salesforce.androidsdk.ui.ManageSpaceActivity"
             android:excludeFromRecents="true"

@@ -35,6 +35,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.PasscodeManager;
+import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.LogoutCompleteReceiver;
 import com.salesforce.androidsdk.util.UserSwitchReceiver;
@@ -47,6 +48,7 @@ public class SalesforceActivityDelegate {
 
     private Activity activity;
     private PasscodeManager passcodeManager;
+    private ScreenLockManager screenLockManager;
     private UserSwitchReceiver userSwitchReceiver;
     private LogoutCompleteReceiver logoutCompleteReceiver;
 
@@ -58,6 +60,7 @@ public class SalesforceActivityDelegate {
     public void onCreate() {
         // Gets an instance of the passcode manager.
         passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
+        screenLockManager = SalesforceSDKManager.getInstance().getScreenLockManager();
         userSwitchReceiver = new ActivityUserSwitchReceiver();
         activity.registerReceiver(userSwitchReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
         logoutCompleteReceiver = new ActivityLogoutCompleteReceiver();
@@ -75,8 +78,8 @@ public class SalesforceActivityDelegate {
      * @param buildRestClient
      */
     public void onResume(boolean buildRestClient) {
-        // Brings up the passcode screen if needed.
-        if (passcodeManager.onResume(activity)) {
+        // Brings up Screen Lock if needed.
+        if (screenLockManager.onResume()) {
             if (buildRestClient) {
                 // Gets login options.
                 final String accountType = SalesforceSDKManager.getInstance().getAccountType();
@@ -114,7 +117,7 @@ public class SalesforceActivityDelegate {
     }
 
     public void onPause() {
-        passcodeManager.onPause(activity);
+        screenLockManager.onPause();
     }
 
     public void onDestroy() {

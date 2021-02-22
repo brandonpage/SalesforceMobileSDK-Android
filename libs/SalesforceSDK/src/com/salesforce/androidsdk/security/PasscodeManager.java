@@ -663,7 +663,7 @@ public class PasscodeManager  {
             ctx = SalesforceSDKManager.getInstance().getAppContext();
         }
 
-        final Intent i = new Intent(ctx, SalesforceSDKManager.getInstance().getPasscodeActivity());
+        final Intent i = new Intent(ctx, SalesforceSDKManager.getInstance().getScreenLockActivity());
         i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
         i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
