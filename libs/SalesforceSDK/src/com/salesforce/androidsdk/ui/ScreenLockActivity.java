@@ -142,20 +142,24 @@ public class ScreenLockActivity extends FragmentActivity {
             case BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED:
                 setErrorMessage(getString(R.string.sf__screen_lock_setup_required, appName));
 
-                /*
-                 * Prompts the user to setup OS screen lock and biometric.
-                 * TODO: Remove when min API > 29.
-                 */
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    final Intent biometricIntent = new Intent(Settings.ACTION_BIOMETRIC_ENROLL);
-                    biometricIntent.putExtra(Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED, getAuthenticators());
-                    actionButton.setOnClickListener(v -> startActivityForResult(biometricIntent, SETUP_REQUEST_CODE));
-                } else {
-                    final Intent lockScreenIntent = new Intent(DevicePolicyManager.ACTION_SET_NEW_PASSWORD);
-                    actionButton.setOnClickListener(v -> startActivityForResult(lockScreenIntent, SETUP_REQUEST_CODE));
+                // Navigating to settings is impossible on these devices, so don't show the button that does nothing.
+                if (!Build.MANUFACTURER.contains("Samsung")) {
+                    /*
+                     * Prompts the user to setup OS screen lock and biometric.
+                     * TODO: Remove when min API > 29.
+                     */
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        final Intent biometricIntent = new Intent(Settings.ACTION_BIOMETRIC_ENROLL);
+                        biometricIntent.putExtra(Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED, getAuthenticators());
+                        actionButton.setOnClickListener(v -> startActivityForResult(biometricIntent, SETUP_REQUEST_CODE));
+                    } else {
+                        final Intent lockScreenIntent = new Intent(DevicePolicyManager.ACTION_SET_NEW_PASSWORD);
+                        actionButton.setOnClickListener(v -> startActivityForResult(lockScreenIntent, SETUP_REQUEST_CODE));
+                    }
+                    actionButton.setText(getString(R.string.sf__screen_lock_setup_button));
+                    actionButton.setVisibility(View.VISIBLE);
                 }
-                actionButton.setText(getString(R.string.sf__screen_lock_setup_button));
-                actionButton.setVisibility(View.VISIBLE);
+
                 break;
             case BiometricManager.BIOMETRIC_SUCCESS:
                 resetUI();
