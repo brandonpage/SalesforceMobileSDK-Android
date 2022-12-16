@@ -37,6 +37,8 @@ import android.widget.Button;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
 
+import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 
@@ -65,6 +67,8 @@ public class ServerPickerActivity extends FragmentActivity implements
     private CustomServerUrlEditor urlEditDialog;
     private LoginServerManager loginServerManager;
 
+    private AuthConfigTask authConfigTask;
+
     /**
      * Clears any custom URLs that may have been set.
      */
@@ -77,10 +81,12 @@ public class ServerPickerActivity extends FragmentActivity implements
     /**
      * Sets the return value of the activity. Selection is stored in the
      * shared prefs file, AuthActivity pulls from the file or a default value.
+     *
+     * TODO:  The function will be unused when min API >= 34.
      */
     @Override
     public void onBackPressed() {
-        (new AuthConfigTask(this)).execute();
+        authConfigTask.execute();
     }
 
     @Override
@@ -99,6 +105,7 @@ public class ServerPickerActivity extends FragmentActivity implements
 
     @Override
     public boolean onNavigateUp() {
+        // TODO:  check API level and call dispatcher?
         onBackPressed();
         return true;
     }
@@ -147,7 +154,14 @@ public class ServerPickerActivity extends FragmentActivity implements
         }
         final RadioGroup radioGroup = findViewById(getServerListGroupId());
         radioGroup.setOnCheckedChangeListener(this);
-    	urlEditDialog = new CustomServerUrlEditor();
+        urlEditDialog = new CustomServerUrlEditor();
+
+        authConfigTask = new AuthConfigTask(this);
+
+        this.getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() { authConfigTask.execute(); }
+        });
     }
 
     @Override
@@ -165,7 +179,7 @@ public class ServerPickerActivity extends FragmentActivity implements
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
+    public boolean onCreateOptionsMenu(@NonNull Menu menu) {
         getMenuInflater().inflate(R.menu.sf__clear_custom_url, menu);
         return super.onCreateOptionsMenu(menu);
     }

@@ -49,6 +49,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
@@ -100,6 +101,11 @@ public class ScreenLockActivity extends FragmentActivity {
             SalesforceSDKLogger.e(TAG, "Unable to retrieve host app icon.  NameNotFoundException: " + e.getMessage());
             appIcon.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.sf__salesforce_logo, null));
         }
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() { /* purposefully blank */ }
+        });
 
         presentAuth();
     }

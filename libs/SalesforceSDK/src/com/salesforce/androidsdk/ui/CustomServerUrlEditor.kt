@@ -50,7 +50,7 @@ class CustomServerUrlEditor: DialogFragment() {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     lateinit var rootView: View
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme
         rootView = inflater.inflate(R.layout.sf__custom_server_url, container)
         rootView.context.setTheme(if (isDarkTheme) R.style.SalesforceSDK_Dialog_Dark else R.style.SalesforceSDK_Dialog)
