@@ -39,6 +39,8 @@ import android.widget.ScrollView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
+import androidx.annotation.OptIn;
+import androidx.core.os.BuildCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 
@@ -104,9 +106,15 @@ public class ServerPickerActivity extends FragmentActivity implements
     }
 
     @Override
+    @OptIn(markerClass = BuildCompat.PrereleaseSdkCheck.class)
     public boolean onNavigateUp() {
-        // TODO:  check API level and call dispatcher?
-        onBackPressed();
+        // TODO:  Update this when min API > 32
+        if (BuildCompat.isAtLeastT()) {
+            getOnBackPressedDispatcher().onBackPressed();
+        } else {
+            onBackPressed();
+        }
+
         return true;
     }
 
@@ -158,7 +166,7 @@ public class ServerPickerActivity extends FragmentActivity implements
 
         authConfigTask = new AuthConfigTask(this);
 
-        this.getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() { authConfigTask.execute(); }
         });

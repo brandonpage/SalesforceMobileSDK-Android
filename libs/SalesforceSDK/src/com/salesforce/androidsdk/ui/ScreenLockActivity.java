@@ -124,9 +124,7 @@ public class ScreenLockActivity extends FragmentActivity {
     }
 
     @Override
-    public void onBackPressed() {
-        // purposefully blank
-    }
+    public void onBackPressed() { /* purposefully blank */ }
 
     private void presentAuth() {
         BiometricPrompt biometricPrompt = getBiometricPrompt();
