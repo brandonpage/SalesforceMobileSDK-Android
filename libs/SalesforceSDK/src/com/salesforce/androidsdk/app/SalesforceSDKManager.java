@@ -78,6 +78,7 @@ import com.salesforce.androidsdk.push.PushService;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.security.BioAuthManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
@@ -155,6 +156,8 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private Class<? extends Activity> loginActivityClass = LoginActivity.class;
     private Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
     private ScreenLockManager screenLockManager;
+
+    private BioAuthManager bioAuthManager;
     private LoginServerManager loginServerManager;
     private boolean isTestRun = false;
 	private boolean isLoggingOut = false;
@@ -1396,10 +1399,27 @@ public class SalesforceSDKManager implements LifecycleObserver {
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     protected void onAppBackgrounded() {
         getScreenLockManager().onAppBackgrounded();
+        getBioAuthManager().onAppBackground();
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     protected void onAppForegrounded() {
+        // Here we should check if screen lock is enabled before bio auth
         getScreenLockManager().onAppForegrounded();
+        getBioAuthManager().onAppForeground();
     }
+
+    public boolean isBioAuthEnabled() {
+        return true;
+//        return false;
+    }
+
+    public BioAuthManager getBioAuthManager() {
+        if (bioAuthManager == null) {
+            bioAuthManager = new BioAuthManager();
+        }
+
+        return bioAuthManager;
+    }
+
 }

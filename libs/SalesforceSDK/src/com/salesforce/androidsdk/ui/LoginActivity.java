@@ -26,28 +26,43 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import static androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG;
+import static androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK;
+import static androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL;
+
+import android.accounts.AbstractAccountAuthenticator;
 import android.accounts.AccountAuthenticatorActivity;
 import android.app.ActionBar;
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.media.tv.DsmccRequest;
 import android.net.Uri;
+import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.security.KeyChain;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentActivity;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -60,7 +75,9 @@ import com.salesforce.androidsdk.auth.idp.IDPInititatedLoginReceiver;
 import com.salesforce.androidsdk.auth.idp.SPRequestHandler;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
+import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
 import com.salesforce.androidsdk.util.AuthConfigTask;
 import com.salesforce.androidsdk.util.EventsObservable;
@@ -68,6 +85,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -79,8 +97,8 @@ import java.util.Map;
  *
  * The bulk of the work for this is actually managed by OAuthWebviewHelper class.
  */
-public class LoginActivity extends AccountAuthenticatorActivity
-		implements OAuthWebviewHelperEvents {
+//public class LoginActivity extends FragmentActivity implements OAuthWebviewHelperEvents {
+public class LoginActivity extends FragmentActivity implements OAuthWebviewHelperEvents {
 
     public static final int PICK_SERVER_REQUEST_CODE = 10;
     private static final String TAG = "LoginActivity";
@@ -106,8 +124,8 @@ public class LoginActivity extends AccountAuthenticatorActivity
         final LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
 
         // Protect against screenshots.
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
-                WindowManager.LayoutParams.FLAG_SECURE);
+//        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
+//                WindowManager.LayoutParams.FLAG_SECURE);
 
         // Fetches auth config if required.
         try {
@@ -121,6 +139,13 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		if (SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled()) {
             final Button button = findViewById(R.id.sf__idp_login_button);
             button.setVisibility(View.VISIBLE);
+        }
+
+        if (SalesforceSDKManager.getInstance().isBioAuthEnabled()) {
+            final Button button = findViewById(R.id.sf__bio_login_button);
+            button.setVisibility(View.VISIBLE);
+
+//            presentAuth();
         }
 
         // Setup the WebView.
@@ -146,6 +171,8 @@ public class LoginActivity extends AccountAuthenticatorActivity
             receiverRegistered = true;
         }
         authCallback = new SPAuthCallback();
+
+        // TODO: check if we are here because current user has expired session and presentAuth()
 	}
 
 	@Override
@@ -271,22 +298,29 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		if (keyCode == KeyEvent.KEYCODE_BACK) {
 
             /*
-		     * If there are no accounts signed in, we need the login screen
-		     * to go away, and go back to the home screen. However, if the
-		     * login screen has been brought up from the switcher screen,
-		     * the back button should take the user back to the previous screen.
-		     */
-			final UserAccountManager accMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
-			wasBackgrounded = true;
-			if (accMgr.getAuthenticatedUsers() == null) {
-				moveTaskToBack(true);
-			} else {
-				finish();
-			}
-			return true;
+             * If there are no accounts signed in, we need the login screen
+             * to go away, and go back to the home screen. However, if the
+             * login screen has been brought up from the switcher screen,
+             * the back button should take the user back to the previous screen.
+             */
+            final UserAccountManager accMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
+            wasBackgrounded = true;
+            if (accMgr.getAuthenticatedUsers() == null) {
+                moveTaskToBack(true);
+            } else {
+                finish();
+            }
+            return true;
 		}
 		return false;
 	}
+
+    @Override
+    public void onBackPressed() {
+        // purposefully blank
+
+        // TODO: check if in bio auth mode
+    }
 
     /**************************************************************************************************
      *
@@ -333,7 +367,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
 	@Override
 	public void onAccountAuthenticatorResult(Bundle authResult) {
-		setAccountAuthenticatorResult(authResult);
+//		setAccountAuthenticatorResult(authResult);
 	}
 
     /**************************************************************************************************
@@ -461,6 +495,11 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	    }
     }
 
+    @Override
+    public void onPointerCaptureChanged(boolean hasCapture) {
+        super.onPointerCaptureChanged(hasCapture);
+    }
+
     public class ChangeServerReceiver extends BroadcastReceiver {
 
         @Override
@@ -505,5 +544,116 @@ public class LoginActivity extends AccountAuthenticatorActivity
                 }
             });
         }
+    }
+
+    private void presentAuth() {
+        BiometricPrompt biometricPrompt = getBiometricPrompt();
+        BiometricManager biometricManager = BiometricManager.from(this);
+
+        switch (biometricManager.canAuthenticate(getAuthenticators())) {
+            case BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE:
+            case BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED:
+            case BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED:
+            case BiometricManager.BIOMETRIC_STATUS_UNKNOWN:
+                // This should never happen.
+                String error = getString(R.string.sf__screen_lock_error);
+                SalesforceSDKLogger.e(TAG, "Biometric manager cannot authenticate. " + error);
+                break;
+            case BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE:
+                break;
+            case BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED:
+                break;
+            case BiometricManager.BIOMETRIC_SUCCESS:
+                biometricPrompt.authenticate(getPromptInfo());
+                break;
+        }
+    }
+
+    private BiometricPrompt getBiometricPrompt() {
+        LoginActivity loginActivity = this;
+        return new BiometricPrompt(this, ContextCompat.getMainExecutor(this),
+                new BiometricPrompt.AuthenticationCallback() {
+                    @Override
+                    public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                        super.onAuthenticationError(errorCode, errString);
+                    }
+
+                    @Override
+                    public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                        super.onAuthenticationSucceeded(result);
+                        // refresh token
+                        //                            SalesforceSDKManager.getInstance().getClientManager().peekRestClient().getOAuthRefreshInterceptor().refreshAccessToken();
+
+//                        UserAccountManager accountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
+//                        accountManager.getUserFromOrgAndUserId(accountManager.getStoredUserId(),
+//                                accountManager.getStoredUserId());
+
+
+                        Log.i("bpage", "trying to get rest client");
+                        new RefreshTokenTask(loginActivity).execute();
+
+//                        SalesforceSDKManager.getInstance().getClientManager().getRestClient(loginActivity,
+//                                client -> {
+//                                    try {
+//                                        Log.i("bpage", "client - attempting refresh");
+//
+//                                        client.getOAuthRefreshInterceptor().refreshAccessToken();
+//                                        finish();
+//                                    } catch (IOException e) {
+//                                        Log.i("bpage", "it broke again");
+//                                    }
+//                                });
+                    }
+
+                    @Override
+                    public void onAuthenticationFailed() {
+                        super.onAuthenticationFailed();
+                    }
+                });
+    }
+
+    private class RefreshTokenTask extends AsyncTask<Void, Void, Void> {
+
+        private final LoginActivity activity;
+
+        public RefreshTokenTask(LoginActivity activity) {
+            this.activity = activity;;
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            SalesforceSDKManager.getInstance().getClientManager().getRestClient(activity,
+                    client -> {
+                        try {
+                            Log.i("bpage", "client - attempting refresh");
+
+                            client.getOAuthRefreshInterceptor().refreshAccessToken();
+                            activity.finish();
+                        } catch (IOException e) {
+                            Log.i("bpage", "it broke again");
+                        }
+                    });
+
+            return null;
+        }
+    }
+
+    private int getAuthenticators() {
+        // TODO: Remove when min API > 29.
+        return (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                ? BIOMETRIC_STRONG | DEVICE_CREDENTIAL
+                : BIOMETRIC_WEAK | DEVICE_CREDENTIAL;
+    }
+
+    private BiometricPrompt.PromptInfo getPromptInfo() {
+        return new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Login with Biometric")
+                .setAllowedAuthenticators(getAuthenticators())
+                .setConfirmationRequired(false)
+                .build();
+    }
+
+    public void onBioAuthClick(View view) {
+        presentAuth();
     }
 }

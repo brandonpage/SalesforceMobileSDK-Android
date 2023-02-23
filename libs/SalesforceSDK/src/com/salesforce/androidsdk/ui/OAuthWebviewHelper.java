@@ -71,6 +71,7 @@ import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.security.BioAuthManager;
 import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -627,6 +628,12 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 int timeoutInMills = id.screenLockTimeout * 1000 * 60;
                 final ScreenLockManager screenLockManager = mgr.getScreenLockManager();
                 screenLockManager.storeMobilePolicy(account, id.mobilePolicy, timeoutInMills);
+            }
+
+            if (id.bioAuthTimeout > 0) {
+                int timeoutInMills = id.screenLockTimeout * 1000 * 60;
+                final BioAuthManager bioAuthManager = mgr.getBioAuthManager();
+                bioAuthManager.storePolicy(account, id.bioAuthPolicy, timeoutInMills);
             }
 
             // All done

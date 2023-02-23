@@ -28,16 +28,23 @@ package com.salesforce.androidsdk.ui;
 
 import android.app.Activity;
 import android.content.IntentFilter;
+import android.util.Log;
 import android.view.KeyEvent;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.security.BioAuthManager;
 import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.LogoutCompleteReceiver;
 import com.salesforce.androidsdk.util.UserSwitchReceiver;
+
+import java.io.IOException;
+import java.net.HttpURLConnection;
 
 /**
  * Class taking care of common behavior of Salesforce*Activity classes
@@ -94,19 +101,40 @@ public class SalesforceActivityDelegate {
                         SalesforceSDKManager.getInstance().logout(activity);
                         return;
                     }
-                    ((SalesforceActivityInterface) activity).onResume(client);
 
-                    // Lets observers know that rendition is complete.
-                    EventsObservable.get().notifyEvent(EventsObservable.EventType.RenditionComplete);
-                }
+                    BioAuthManager bioAuthManager = SalesforceSDKManager.getInstance().getBioAuthManager();
+//                    if (SalesforceSDKManager.getInstance().isBioAuthEnabled()) {
+//                        client.sendAsync(RestRequest.getRequestForUserInfo(), new RestClient.AsyncRequestCallback() {
+//                            @Override
+//                            public void onSuccess(RestRequest request, RestResponse response) {
+//                                Log.i("bpage", "reponse: " + response);
+//                                int responseCode = response.getStatusCode();
+//                                if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED ||
+//                                responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
+//                                    bioAuthManager.lock();
+//                                }
+//                            }
+//
+//                            @Override
+//                            public void onError(Exception exception) {
+//                                Log.i("bpage", "error, exception: " + exception.getLocalizedMessage());
+//                            }
+//                        });
+//                    } else {
+                        ((SalesforceActivityInterface) activity).onResume(client);
+
+                        // Lets observers know that rendition is complete.
+                        EventsObservable.get().notifyEvent(EventsObservable.EventType.RenditionComplete);
+                    }
+//                }
             });
-        }
-        else {
+        } else {
             ((SalesforceActivityInterface) activity).onResume(null);
         }
     }
 
-    public void onPause() { }
+    public void onPause() {
+    }
 
     public void onDestroy() {
         activity.unregisterReceiver(userSwitchReceiver);

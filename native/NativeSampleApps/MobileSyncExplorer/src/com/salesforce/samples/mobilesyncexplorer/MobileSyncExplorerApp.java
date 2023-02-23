@@ -28,6 +28,7 @@ package com.salesforce.samples.mobilesyncexplorer;
 
 import android.app.Application;
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.samples.mobilesyncexplorer.ui.MainActivity;
 

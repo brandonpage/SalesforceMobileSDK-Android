@@ -78,6 +78,12 @@ public class RestClient {
 	private OkHttpClient.Builder okHttpClientBuilder;
 	private OkHttpClient okHttpClient;
 
+	private Long lastActivity;
+
+	public Long getLastActivity() {
+		return lastActivity;
+	}
+
 	/**
 	 * AuthTokenProvider interface.
 	 * RestClient will call its authTokenProvider to refresh its authToken once it has expired. 
@@ -339,6 +345,7 @@ public class RestClient {
 	 * @return okHttp Call object (through which you can cancel the request or get the request back)
 	 */
     public Call sendAsync(final RestRequest restRequest, final AsyncRequestCallback callback) {
+		lastActivity = System.currentTimeMillis();
 	    Request request = buildRequest(restRequest);
 		Call call = okHttpClient.newCall(request);
 		call.enqueue(new Callback() {
@@ -364,6 +371,7 @@ public class RestClient {
 	 * @throws IOException 
 	 */
 	public RestResponse sendSync(RestRequest restRequest) throws IOException {
+		lastActivity = System.currentTimeMillis();
         Request request = buildRequest(restRequest);
         Response response = okHttpClient.newCall(request).execute();
         return new RestResponse(response);
@@ -378,6 +386,7 @@ public class RestClient {
      * @throws IOException
      */
     public RestResponse sendSync(RestRequest restRequest, Interceptor... interceptors) throws IOException {
+		lastActivity = System.currentTimeMillis();
         Request request = buildRequest(restRequest);
 
         // builder that shares the same connection pool, dispatcher, and configuration with the original client
@@ -688,30 +697,35 @@ public class RestClient {
 			 * Standard access token expiry returns 401 as the error code.
 			 */
             if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED) {
-				final URI curInstanceUrl = clientInfo.getInstanceUrl();
-				if (curInstanceUrl != null) {
-					final HttpUrl currentInstanceUrl = HttpUrl.get(curInstanceUrl);
-					if (currentInstanceUrl != null) {
+				if (!SalesforceSDKManager.getInstance().getBioAuthManager().shouldAllowRefresh()) {
+					// Don't refresh auth token
+					// todo: hold push?
+				} else {
+					final URI curInstanceUrl = clientInfo.getInstanceUrl();
+					if (curInstanceUrl != null) {
+						final HttpUrl currentInstanceUrl = HttpUrl.get(curInstanceUrl);
+						if (currentInstanceUrl != null) {
 
-						// Checks if the host of the request is the same as instance URL.
-						boolean isHostInstanceUrl = currentInstanceUrl.host().equals(request.url().host());
-						refreshAccessToken();
-						if (getAuthToken() != null) {
-							request = buildAuthenticatedRequest(request);
+							// Checks if the host of the request is the same as instance URL.
+							boolean isHostInstanceUrl = currentInstanceUrl.host().equals(request.url().host());
+							refreshAccessToken();
+							if (getAuthToken() != null) {
+								request = buildAuthenticatedRequest(request);
 
-							/*
-							 * During instance migration, the instance URL could change. Hence, the host
-							 * needs to be adjusted to replace the old instance URL with the new instance
-							 * URL before replaying this request. However, this adjustment should be applied
-							 * only if the host of the request was the old instance URL. This avoids
-							 * accidental manipulation of the host for requests where the caller has
-							 * passed in their own fully formed host URL that is not instance URL.
-							 */
-							if (isHostInstanceUrl && !currentInstanceUrl.host().equals(request.url().host())) {
-								request = adjustHostInRequest(request, currentInstanceUrl.host());
+								/*
+								 * During instance migration, the instance URL could change. Hence, the host
+								 * needs to be adjusted to replace the old instance URL with the new instance
+								 * URL before replaying this request. However, this adjustment should be applied
+								 * only if the host of the request was the old instance URL. This avoids
+								 * accidental manipulation of the host for requests where the caller has
+								 * passed in their own fully formed host URL that is not instance URL.
+								 */
+								if (isHostInstanceUrl && !currentInstanceUrl.host().equals(request.url().host())) {
+									request = adjustHostInRequest(request, currentInstanceUrl.host());
+								}
+								response.close();
+								response = chain.proceed(request);
 							}
-							response.close();
-							response = chain.proceed(request);
 						}
 					}
 				}
@@ -796,7 +810,7 @@ public class RestClient {
         /**
          * Swaps the existing access token for a new one.
          */
-        private void refreshAccessToken() throws IOException {
+         public void refreshAccessToken() throws IOException {
 
             // If we haven't retried already and we have an accessTokenProvider
             // Then let's try to get a new authToken
