@@ -428,6 +428,11 @@ public class LoginActivity extends FragmentActivity implements OAuthWebviewHelpe
 
 	@Override
 	public void finish(UserAccount userAccount) {
+        if (SalesforceSDKManager.getInstance().isBioAuthEnabled() &&
+            SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers().contains(userAccount)) {
+            new RefreshTokenTask(this).execute();
+        }
+
         initAnalyticsManager(userAccount);
         final UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
         final List<UserAccount> authenticatedUsers = userAccountManager.getAuthenticatedUsers();

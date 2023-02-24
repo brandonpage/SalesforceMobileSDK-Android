@@ -584,14 +584,14 @@ public class ClientManager {
                     }
                     Intent broadcastIntent;
                     if (newAuthToken == null) {
-//                        if (clientManager.revokedTokenShouldLogout) {
-//
-//                        	// Check if a looper exists before trying to prepare another one.
-//                        	if (Looper.myLooper() == null) {
-//                                Looper.prepare();
-//                        	}
-//                            SalesforceSDKManager.getInstance().logout(null, false);
-//                        }
+                        if (clientManager.revokedTokenShouldLogout) {
+
+                        	// Check if a looper exists before trying to prepare another one.
+                        	if (Looper.myLooper() == null) {
+                                Looper.prepare();
+                        	}
+                            SalesforceSDKManager.getInstance().logout(null, false);
+                        }
 
                         // Broadcasts an intent that the access token has been revoked.
                         broadcastIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
