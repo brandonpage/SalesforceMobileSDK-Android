@@ -69,7 +69,6 @@ import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
-import com.salesforce.androidsdk.security.BioAuthManager;
 import com.salesforce.androidsdk.security.BiometricAuthManager;
 import com.salesforce.androidsdk.security.ScreenLockManager_old;
 import com.salesforce.androidsdk.util.EventsObservable;
