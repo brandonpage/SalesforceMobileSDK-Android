@@ -26,9 +26,9 @@
  */
 package com.salesforce.androidsdk.app;
 
-import static com.salesforce.androidsdk.security.ScreenLockManager.MOBILE_POLICY_PREF;
-import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK;
-import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK_TIMEOUT;
+import static com.salesforce.androidsdk.security.ScreenLockManager_old.MOBILE_POLICY_PREF;
+import static com.salesforce.androidsdk.security.ScreenLockManager_old.SCREEN_LOCK;
+import static com.salesforce.androidsdk.security.ScreenLockManager_old.SCREEN_LOCK_TIMEOUT;
 
 import android.content.Context;
 import android.content.SharedPreferences;

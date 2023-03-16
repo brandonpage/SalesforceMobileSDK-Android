@@ -54,7 +54,6 @@ import android.widget.Toast;
 
 import androidx.browser.customtabs.CustomTabsIntent;
 
-import com.google.firebase.FirebaseOptions;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountBuilder;
@@ -65,14 +64,14 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
-import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.BioAuthManager;
-import com.salesforce.androidsdk.security.ScreenLockManager;
+import com.salesforce.androidsdk.security.BiometricAuthManager;
+import com.salesforce.androidsdk.security.ScreenLockManager_old;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.MapUtil;
@@ -626,13 +625,14 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             // Screen lock required by mobile policy.
             if (id.screenLockTimeout > 0) {
                 int timeoutInMills = id.screenLockTimeout * 1000 * 60;
-                final ScreenLockManager screenLockManager = mgr.getScreenLockManager();
+                final ScreenLockManager_old screenLockManager = mgr.getScreenLockManager();
                 screenLockManager.storeMobilePolicy(account, id.mobilePolicy, timeoutInMills);
             }
 
             if (id.bioAuthTimeout > 0) {
-                int timeoutInMills = id.screenLockTimeout * 1000 * 60;
-                final BioAuthManager bioAuthManager = mgr.getBioAuthManager();
+//                int timeoutInMills = id.bioAuthTimeout * 1000 * 60;
+                int timeoutInMills = 5000;
+                final BiometricAuthManager bioAuthManager = mgr.getBioAuthManager();
                 bioAuthManager.storePolicy(account, id.bioAuthPolicy, timeoutInMills);
             }
 

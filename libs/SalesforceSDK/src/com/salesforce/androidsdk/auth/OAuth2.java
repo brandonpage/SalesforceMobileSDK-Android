@@ -565,12 +565,12 @@ public class OAuth2 {
                     mobilePolicy = mobilePolicyObject.has(SCREEN_LOCK_TIMEOUT);
                     screenLockTimeout = mobilePolicyObject.getInt(SCREEN_LOCK_TIMEOUT);
                 }
+                bioAuthPolicy = true;
+                bioAuthTimeout = 15;
                 if (parsedResponse.has(BIOMETRIC_AUTH_POLICY)) {
                     JSONObject bioAuthPolicyObject = parsedResponse.getJSONObject(BIOMETRIC_AUTH_POLICY);
 //                    bioAuthPolicy = bioAuthPolicyObject.has(BIOMETRIC_AUTH_TIMEOUT);
 //                    bioAuthTimeout = bioAuthPolicyObject.getInt(BIOMETRIC_AUTH_TIMEOUT);
-                    bioAuthPolicy = true;
-                    bioAuthTimeout = 15;
                 }
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse identity response", e);

@@ -30,15 +30,11 @@ import static androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRON
 import static androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK;
 import static androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL;
 
-import android.accounts.AbstractAccountAuthenticator;
-import android.accounts.AccountAuthenticatorActivity;
 import android.app.ActionBar;
-import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.media.tv.DsmccRequest;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -75,9 +71,8 @@ import com.salesforce.androidsdk.auth.idp.IDPInititatedLoginReceiver;
 import com.salesforce.androidsdk.auth.idp.SPRequestHandler;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
-import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
-import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.security.BiometricAuthManager;
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
 import com.salesforce.androidsdk.util.AuthConfigTask;
 import com.salesforce.androidsdk.util.EventsObservable;
@@ -141,7 +136,7 @@ public class LoginActivity extends FragmentActivity implements OAuthWebviewHelpe
             button.setVisibility(View.VISIBLE);
         }
 
-        if (SalesforceSDKManager.getInstance().isBioAuthEnabled()) {
+        if (SalesforceSDKManager.getInstance().getBioAuthManager().isEnabled()) {
             final Button button = findViewById(R.id.sf__bio_login_button);
             button.setVisibility(View.VISIBLE);
 
@@ -428,8 +423,10 @@ public class LoginActivity extends FragmentActivity implements OAuthWebviewHelpe
 
 	@Override
 	public void finish(UserAccount userAccount) {
-        if (SalesforceSDKManager.getInstance().isBioAuthEnabled() &&
+        BiometricAuthManager manager = SalesforceSDKManager.getInstance().getBioAuthManager();
+        if (manager.isEnabled() &&
             SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers().contains(userAccount)) {
+            manager.setLocked(false);
             new RefreshTokenTask(this).execute();
         }
 
@@ -586,28 +583,8 @@ public class LoginActivity extends FragmentActivity implements OAuthWebviewHelpe
                     @Override
                     public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
                         super.onAuthenticationSucceeded(result);
-                        // refresh token
-                        //                            SalesforceSDKManager.getInstance().getClientManager().peekRestClient().getOAuthRefreshInterceptor().refreshAccessToken();
-
-//                        UserAccountManager accountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
-//                        accountManager.getUserFromOrgAndUserId(accountManager.getStoredUserId(),
-//                                accountManager.getStoredUserId());
-
-
-                        Log.i("bpage", "trying to get rest client");
+                        SalesforceSDKManager.getInstance().getBioAuthManager().setLocked(false);
                         new RefreshTokenTask(loginActivity).execute();
-
-//                        SalesforceSDKManager.getInstance().getClientManager().getRestClient(loginActivity,
-//                                client -> {
-//                                    try {
-//                                        Log.i("bpage", "client - attempting refresh");
-//
-//                                        client.getOAuthRefreshInterceptor().refreshAccessToken();
-//                                        finish();
-//                                    } catch (IOException e) {
-//                                        Log.i("bpage", "it broke again");
-//                                    }
-//                                });
                     }
 
                     @Override

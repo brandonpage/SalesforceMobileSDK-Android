@@ -29,8 +29,8 @@ package com.salesforce.androidsdk.ui;
 import static androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG;
 import static androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK;
 import static androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL;
-import static com.salesforce.androidsdk.security.ScreenLockManager.MOBILE_POLICY_PREF;
-import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK;
+import static com.salesforce.androidsdk.security.ScreenLockManager_old.MOBILE_POLICY_PREF;
+import static com.salesforce.androidsdk.security.ScreenLockManager_old.SCREEN_LOCK;
 
 import android.app.admin.DevicePolicyManager;
 import android.content.Context;

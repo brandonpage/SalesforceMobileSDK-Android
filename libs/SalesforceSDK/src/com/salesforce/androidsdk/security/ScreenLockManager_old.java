@@ -44,7 +44,7 @@ import java.util.List;
  *
  * @author bpage
  */
-public class ScreenLockManager {
+public class ScreenLockManager_old {
 
     public static final String MOBILE_POLICY_PREF = "mobile_policy";
     public static final String SCREEN_LOCK = "screen_lock";

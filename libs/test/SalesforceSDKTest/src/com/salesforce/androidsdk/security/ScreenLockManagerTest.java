@@ -31,9 +31,9 @@ import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_ACCOUNT_TYPE
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_CALLBACK_URL;
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_CLIENT_ID;
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_SCOPES;
-import static com.salesforce.androidsdk.security.ScreenLockManager.MOBILE_POLICY_PREF;
-import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK;
-import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK_TIMEOUT;
+import static com.salesforce.androidsdk.security.ScreenLockManager_old.MOBILE_POLICY_PREF;
+import static com.salesforce.androidsdk.security.ScreenLockManager_old.SCREEN_LOCK;
+import static com.salesforce.androidsdk.security.ScreenLockManager_old.SCREEN_LOCK_TIMEOUT;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -62,7 +62,7 @@ public class ScreenLockManagerTest {
     private static final int TIMEOUT = 60000;
     private static final int LONG_TIMEOUT = 100000;
 
-    private ScreenLockManager screenLockManager;
+    private ScreenLockManager_old screenLockManager;
     private UserAccount userAccount = buildTestUserAccount();
     private Context ctx = SalesforceSDKManager.getInstance().getAppContext();
     private SharedPreferences sharedPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
@@ -71,7 +71,7 @@ public class ScreenLockManagerTest {
 
     @Before
     public void setUp() {
-        screenLockManager = new ScreenLockManager();
+        screenLockManager = new ScreenLockManager_old();
     }
 
     @After

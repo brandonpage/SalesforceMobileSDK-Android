@@ -79,8 +79,9 @@ import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.BioAuthManager;
+import com.salesforce.androidsdk.security.BiometricAuthManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
-import com.salesforce.androidsdk.security.ScreenLockManager;
+import com.salesforce.androidsdk.security.ScreenLockManager_old;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.ui.DevInfoActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -155,9 +156,9 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private final Class<? extends Activity> mainActivityClass;
     private Class<? extends Activity> loginActivityClass = LoginActivity.class;
     private Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
-    private ScreenLockManager screenLockManager;
+    private ScreenLockManager_old screenLockManager;
 
-    private BioAuthManager bioAuthManager;
+    private BiometricAuthManager bioAuthManager;
     private LoginServerManager loginServerManager;
     private boolean isTestRun = false;
 	private boolean isLoggingOut = false;
@@ -507,10 +508,10 @@ public class SalesforceSDKManager implements LifecycleObserver {
      *
      * @return ScreenLockManager instance.
      */
-    public ScreenLockManager getScreenLockManager() {
+    public ScreenLockManager_old getScreenLockManager() {
         synchronized (screenLockManagerLock) {
             if (screenLockManager == null) {
-                screenLockManager = new ScreenLockManager();
+                screenLockManager = new ScreenLockManager_old();
             }
             return screenLockManager;
         }
@@ -909,6 +910,13 @@ public class SalesforceSDKManager implements LifecycleObserver {
     	}
     }
 
+    public void biometricAuthLock() {
+        BiometricAuthManager manager = getBioAuthManager();
+        if (manager.isEnabled()) {
+            manager.lock();
+        }
+    }
+
     /**
      * Removes the account upon logout.
      *
@@ -1215,6 +1223,14 @@ public class SalesforceSDKManager implements LifecycleObserver {
                         SalesforceSDKManager.getInstance().getAppContext().startActivity(i);
                     }
                 });
+        devActions.put(
+                "Biometric Lock", new DevActionHandler() {
+                    @Override
+                    public void onSelected() {
+                        SalesforceSDKManager.getInstance().getBioAuthManager().lock();
+                    }
+                }
+        );
         return devActions;
     }
 
@@ -1399,24 +1415,19 @@ public class SalesforceSDKManager implements LifecycleObserver {
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     protected void onAppBackgrounded() {
         getScreenLockManager().onAppBackgrounded();
-        getBioAuthManager().onAppBackground();
+        getBioAuthManager().onAppBackgrounded();
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     protected void onAppForegrounded() {
         // Here we should check if screen lock is enabled before bio auth
         getScreenLockManager().onAppForegrounded();
-        getBioAuthManager().onAppForeground();
+        getBioAuthManager().onAppForegrounded();
     }
 
-    public boolean isBioAuthEnabled() {
-        return true;
-//        return false;
-    }
-
-    public BioAuthManager getBioAuthManager() {
+    public BiometricAuthManager getBioAuthManager() {
         if (bioAuthManager == null) {
-            bioAuthManager = new BioAuthManager();
+            bioAuthManager = new BiometricAuthManager();
         }
 
         return bioAuthManager;

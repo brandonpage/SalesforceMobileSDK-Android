@@ -28,23 +28,17 @@ package com.salesforce.androidsdk.ui;
 
 import android.app.Activity;
 import android.content.IntentFilter;
-import android.util.Log;
 import android.view.KeyEvent;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.rest.RestRequest;
-import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.security.BioAuthManager;
-import com.salesforce.androidsdk.security.ScreenLockManager;
+import com.salesforce.androidsdk.security.ScreenLockManager_old;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.LogoutCompleteReceiver;
 import com.salesforce.androidsdk.util.UserSwitchReceiver;
-
-import java.io.IOException;
-import java.net.HttpURLConnection;
 
 /**
  * Class taking care of common behavior of Salesforce*Activity classes
@@ -53,7 +47,7 @@ import java.net.HttpURLConnection;
 public class SalesforceActivityDelegate {
 
     private final Activity activity;
-    private ScreenLockManager screenLockManager;
+    private ScreenLockManager_old screenLockManager;
     private UserSwitchReceiver userSwitchReceiver;
     private LogoutCompleteReceiver logoutCompleteReceiver;
 
@@ -102,7 +96,7 @@ public class SalesforceActivityDelegate {
                         return;
                     }
 
-                    BioAuthManager bioAuthManager = SalesforceSDKManager.getInstance().getBioAuthManager();
+//                    BioAuthManager bioAuthManager = SalesforceSDKManager.getInstance().getBioAuthManager();
 //                    if (SalesforceSDKManager.getInstance().isBioAuthEnabled()) {
 //                        client.sendAsync(RestRequest.getRequestForUserInfo(), new RestClient.AsyncRequestCallback() {
 //                            @Override
