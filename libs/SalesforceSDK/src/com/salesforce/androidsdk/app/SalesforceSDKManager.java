@@ -78,7 +78,6 @@ import com.salesforce.androidsdk.push.PushService;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.security.BioAuthManager;
 import com.salesforce.androidsdk.security.BiometricAuthManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.security.ScreenLockManager_old;

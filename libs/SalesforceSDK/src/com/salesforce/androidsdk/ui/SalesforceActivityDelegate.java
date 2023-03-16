@@ -34,7 +34,6 @@ import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.security.BioAuthManager;
 import com.salesforce.androidsdk.security.ScreenLockManager_old;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.LogoutCompleteReceiver;
