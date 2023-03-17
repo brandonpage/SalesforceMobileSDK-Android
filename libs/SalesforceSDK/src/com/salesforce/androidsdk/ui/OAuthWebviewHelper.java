@@ -43,6 +43,8 @@ import android.security.KeyChain;
 import android.security.KeyChainAliasCallback;
 import android.security.KeyChainException;
 import android.text.TextUtils;
+import android.view.View;
+import android.view.ViewParent;
 import android.webkit.ClientCertRequest;
 import android.webkit.CookieManager;
 import android.webkit.SslErrorHandler;
@@ -50,6 +52,8 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import androidx.browser.customtabs.CustomTabsIntent;
@@ -443,6 +447,15 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         @Override
 		public void onPageFinished(WebView view, String url) {
+            if (url.contains("frontdoor.jsp")) {
+                final RelativeLayout parentView = (RelativeLayout) view.getParent();
+                if (parentView != null) {
+                    final Button button = parentView.findViewById(R.id.sf__bio_login_button);
+                    if (button != null) {
+                        button.setVisibility(View.INVISIBLE);
+                    }
+                }
+            }
         	EventsObservable.get().notifyEvent(EventType.AuthWebViewPageFinished, url);
         	super.onPageFinished(view, url);
 		}
