@@ -370,9 +370,6 @@ workflows:
     when:
       and:
         - equal: [ "webhook", << pipeline.trigger_source >> ]
-        - matches:
-            pattern: "^pull/\\d+$"
-            value: << pipeline.git.branch >>
     jobs:
       - static-analysis
       - run-tests:
