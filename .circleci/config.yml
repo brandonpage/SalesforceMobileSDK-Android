@@ -382,6 +382,7 @@ workflows:
               lib: ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact"]
               api_level: [<< pipeline.parameters.api-level >>]
               pr: [true]
+          context: test_restrictions
 
   # GUI Driven "Triggers" Schedule
   # Monday    8 PM - API 24
