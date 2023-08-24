@@ -34,6 +34,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
 
 import java.util.LinkedHashMap;
+import java.util.regex.Pattern;
 
 /**
  * Application class for the rest explorer app.
@@ -56,7 +57,7 @@ public class RestExplorerApp extends Application {
          * Replace 'com.salesforce.samples.salesforceandroididptemplateapp' with the package name
          * of the IDP app meant to be used.
          */
-         SalesforceSDKManager.getInstance().setIDPAppPackageName("com.salesforce.samples.salesforceandroididptemplateapp");
+//         SalesforceSDKManager.getInstance().setIDPAppPackageName("com.salesforce.samples.salesforceandroididptemplateapp");
 
 		/*
 		 * Un-comment the line below to enable push notifications in this app.
@@ -64,6 +65,8 @@ public class RestExplorerApp extends Application {
 		 * Add your Firebase 'google-services.json' file to the 'app' folder of your project.
 		 */
 		// SalesforceSDKManager.getInstance().setPushNotificationReceiver(pnInterface);
+
+		SalesforceSDKManager.getInstance().setCustomDomainInferencePattern(Pattern.compile("^https:\\/\\/mobilesdk\\.my\\.salesforce\\.com\\/\\?startURL=%2Fsetup%2Fsecur%2FRemoteAccessAuthorizationPage\\.apexp"));
 	}
 
 	static class RestExplorerSDKManager extends SalesforceSDKManager {
