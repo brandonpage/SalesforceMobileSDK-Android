@@ -70,7 +70,7 @@ executors:
     environment:
       GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx4096m -XX:+HeapDumpOnOutOfMemoryError" -Dorg.gradle.daemon=false'
 
-#  Potential parameters that can come from the project GUI Triggers
+# Parameters that can come from circleci.yml
 parameters:
   api-level:
     type: integer

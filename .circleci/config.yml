@@ -7,6 +7,12 @@ orbs:
   path-filtering: circleci/path-filtering@1.0.0
   continuation: circleci/continuation@1.0.0
 
+#  Potential parameters that can come from the project GUI Triggers
+parameters:
+  api-level:
+    type: integer
+    default: *default-api-level
+
 workflows:
   pr-tests:
     when:
