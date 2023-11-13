@@ -44,7 +44,7 @@ workflows:
             libs/test/SalesforceReactTest/.* test-SalesforceReact true
             libs/SalesforceSDK/src/com/salesforce/androidsdk/ui/.* test-RestExplorer true
           base-revision: dev
-          config-path: .circleci/lib_test_config.yml
+          config-path: ./lib_test_config.yml
 
   # GUI Driven "Triggers" Schedule
   # Monday    8 PM - API 24
@@ -78,5 +78,5 @@ jobs:
     executor: continuation/default
     steps:
       - continuation/continue:
-          configuration_path: .circleci/lib_test_config.yml
-          parameters: '{"pr": false, "api-level": << pipeline.parameters.api-level >>}'
+          configuration_path: ./lib_test_config.yml
+          parameters: '{"pr": false, "api-level": << pipeline.parameters.api-level >> }'
