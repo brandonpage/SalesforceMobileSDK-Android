@@ -77,7 +77,7 @@ jobs:
   run-nightly-tests:
     executor: continuation/default
     steps:
+      - checkout
       - continuation/continue:
           configuration_path: .circleci/lib_test_config.yml
-          checkout: true
           parameters: '{"pr": false, "api-level": << pipeline.parameters.api-level >> }'
