@@ -62,7 +62,11 @@ workflows:
       not:
         equal: [ "webhook", << pipeline.trigger_source >> ]
     jobs:
-      - run-nightly-tests
+      - run-nightly-tests:
+          pre-steps:
+            - run:
+                command: |
+                  echo '{"pr": false, "cont-api-level": << pipeline.parameters.api-level >> }' >> /tmp/pipeline-parameters.json
 
 
 jobs:
@@ -80,4 +84,4 @@ jobs:
       - checkout
       - continuation/continue:
           configuration_path: .circleci/lib_test_config.yml
-          parameters: '{"pr": false, "cont-api-level": << pipeline.parameters.api-level >> }'
+          parameters: /tmp/pipeline-parameters.json
