@@ -11,7 +11,7 @@ orbs:
 parameters:
   api-level:
     type: integer
-    default: *default-api-level
+    default: 0
 
 workflows:
   pr-tests:
@@ -79,4 +79,4 @@ jobs:
     steps:
       - continuation/continue:
           configuration_path: .circleci/lib_test_config.yml
-          parameters: '{"pr": false}'
+          parameters: '{"pr": false, "api-level": << pipeline.parameters.api-level >>}'

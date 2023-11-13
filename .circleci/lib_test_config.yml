@@ -323,52 +323,65 @@ jobs:
 
 workflows:
   test-SalesforceAnalytics:
-    when: << pipeline.parameters.test-SalesforceAnalytics >>
+    when: 
+      condition: << pipeline.parameters.test-SalesforceAnalytics >>
     jobs:
       - run-tests:
           name: "Test SalesforceAnalytics"
+          context: Android Unit Tests
           lib: "SalesforceAnalytics"
           api_level: *default-api-level
   test-SalesforceSDK:
-    when: << pipeline.parameters.test-SalesforceSDK >>
+    when: 
+      condition: << pipeline.parameters.test-SalesforceSDK >>
     jobs:
       - run-tests:
           name: "Test SalesforceSDK"
+          context: Android Unit Tests
           lib: "SalesforceSDK"
           api_level: *default-api-level
   test-SmartStore:
-    when: << pipeline.parameters.test-SmartStore >>
+    when: 
+      condition: << pipeline.parameters.test-SmartStore >>
     jobs:
       - run-tests:
           name: "Test SmartStore"
+          context: Android Unit Tests
           lib: "SmartStore"
           api_level: *default-api-level
   test-MobileSync:
-    when: << pipeline.parameters.test-MobileSync >>
+    when: 
+      condition: << pipeline.parameters.test-MobileSync >>
     jobs:
       - run-tests:
           name: "Test MobileSync"
+          context: Android Unit Tests
           lib: "MobileSync"
           api_level: *default-api-level
   test-SalesforceHybrid:
-    when: << pipeline.parameters.test-SalesforceHybrid >>
+    when: 
+      condition: << pipeline.parameters.test-SalesforceHybrid >>
     jobs:
       - run-tests:
           name: "Test SalesforceHybrid"
+          context: Android Unit Tests
           lib: "SalesforceHybrid"
           api_level: *default-api-level
   test-SalesforceReact:
-    when: << pipeline.parameters.test-SalesforceReact >>
+    when: 
+      condition: << pipeline.parameters.test-SalesforceReact >>
     jobs:
       - run-tests:
           name: "Test SalesforceReact"
+          context: Android Unit Tests
           lib: "SalesforceReact"
           api_level: *default-api-level
-    test-all:
-      when: 
+  test-all:
+    when: 
+      condition:
         not: << pipeline.parameters.pr >>
-      jobs:
-        - run-tests:
+    jobs:
+      - run-tests:
           name: << matrix.lib >> API << pipeline.parameters.api-level >>
           context: Android Unit Tests
           matrix:
@@ -376,10 +389,8 @@ workflows:
               lib: [ "SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact" ]
               api_level: [ << pipeline.parameters.api-level >> ]
               pr: [ false ]
-        - test-rest-explorer:
+      - test-rest-explorer:
           name: RestExplorer API << pipeline.parameters.api-level >>
           context: Android Unit Tests
-          matrix:
-            parameters:
-              api_level: [ << pipeline.parameters.api-level >> ]
-        - generate-artifacts
+          api_level: << pipeline.parameters.api-level >>
+      - generate-artifacts
