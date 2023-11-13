@@ -80,4 +80,4 @@ jobs:
       - checkout
       - continuation/continue:
           configuration_path: .circleci/lib_test_config.yml
-          parameters: '{"pr": false, "api-level": << pipeline.parameters.api-level >> }'
+          parameters: '{"pr": false, "cont-api-level": << pipeline.parameters.api-level >> }'

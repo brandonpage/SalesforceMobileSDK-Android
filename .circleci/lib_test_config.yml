@@ -72,7 +72,7 @@ executors:
 
 # Parameters that can come from circleci.yml
 parameters:
-  api-level:
+  cont-api-level:
     type: integer
     default: *default-api-level
   pr:
@@ -382,15 +382,15 @@ workflows:
         not: << pipeline.parameters.pr >>
     jobs:
       - run-tests:
-          name: << matrix.lib >> API << pipeline.parameters.api-level >>
+          name: << matrix.lib >> API << pipeline.parameters.cont-api-level >>
           context: Android Unit Tests
           matrix:
             parameters:
               lib: [ "SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact" ]
-              api_level: [ << pipeline.parameters.api-level >> ]
+              api_level: [ << pipeline.parameters.cont-api-level >> ]
               pr: [ false ]
       - test-rest-explorer:
-          name: RestExplorer API << pipeline.parameters.api-level >>
+          name: RestExplorer API << pipeline.parameters.cont-api-level >>
           context: Android Unit Tests
-          api_level: << pipeline.parameters.api-level >>
+          api_level: << pipeline.parameters.cont-api-level >>
       - generate-artifacts
