@@ -396,7 +396,7 @@ public class RestClient {
 	public static class ClientInfo {
 
 		public final URI instanceUrl;
-		public final URI loginUrl;
+		public URI loginUrl;
 		public final URI identityUrl;
 		public final String accountName;
 		public final String username;
@@ -590,6 +590,13 @@ public class RestClient {
 				} else if (endpoint == RestRequest.RestEndpoint.INSTANCE) {
 					resolvedUrlBuilder.append(instanceUrl.toString());
 				} else if (endpoint == RestRequest.RestEndpoint.LOGIN) {
+					if (loginUrl == null) {
+						try {
+							loginUrl = new URI("https://msdk-enhanced-dev-ed.my.site.com/headless");
+						} catch (URISyntaxException e) {
+							throw new RuntimeException(e);
+						}
+					}
 					resolvedUrlBuilder.append(loginUrl.toString());
 				}
 				if (!resolvedUrlBuilder.toString().endsWith("/")) {

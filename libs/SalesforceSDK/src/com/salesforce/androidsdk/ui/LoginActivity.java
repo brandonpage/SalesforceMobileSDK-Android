@@ -44,6 +44,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.security.KeyChain;
+import android.util.Base64;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -57,6 +59,7 @@ import android.widget.Toast;
 import android.window.OnBackInvokedDispatcher;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.biometric.BiometricManager;
@@ -68,11 +71,17 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
+import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
 import com.salesforce.androidsdk.util.AuthConfigTask;
 import com.salesforce.androidsdk.util.EventsObservable;
@@ -80,10 +89,22 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
+import org.json.JSONException;
+
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+
+import okhttp3.MediaType;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okio.BufferedSink;
 
 /**
  * Login Activity: takes care of authenticating the user.
@@ -187,6 +208,63 @@ public class LoginActivity extends AppCompatActivity
                     this::handleBackBehavior
             );
         }
+
+
+        // TEST code start
+        SalesforceSDKManager.getInstance().getClientManager().getUnauthenticatedRestClient(this, client -> {
+            String creds = "" + ":" + "";
+            String encoodedCreds = Base64.encodeToString(creds.getBytes(), Base64.NO_WRAP);
+            String baseUrl = "https://msdk-enhanced-dev-ed.my.site.com/";
+            String OAUTH_AUTH_PATH = "/services/oauth2/authorize";
+
+            Map<String, String> headers = new HashMap<>();
+            headers.put("Auth-Request-Type", "Named-User");
+            headers.put("Content-Type", "application/x-www-form-urlencoded");
+            headers.put("Authorization", "Basic " + encoodedCreds);
+
+            MediaType mediaType = MediaType.parse("application/x-www-form-urlencoded");
+            RequestBody body = RequestBody.create(mediaType, "code_challenge_method=SHA256&response_type" +
+                    "=code_credentials&client_id=3MVG9CEn_O3jvv0wTqRT0Le6tmzX.EQ9ZvtHL1TG3gHFV.4IvKZyXw5SgdiVPi61mXrpu40mCOhKevEfYNMOm&redirect_uri=https://msdk-enhanced-dev-ed.my.site.com/services/oauth2/echo");
+
+            // Requires login url to be set correctly
+            RestRequest loginRestRequest = new RestRequest(RestRequest.RestMethod.POST,
+                    RestRequest.RestEndpoint.LOGIN, OAUTH_AUTH_PATH, body,
+                    headers);
+
+            LoginOptions options = SalesforceSDKManager.getInstance().getLoginOptions(null, baseUrl);
+            client.sendAsync(loginRestRequest, new RestClient.AsyncRequestCallback() {
+                @Override
+                public void onSuccess(RestRequest request, RestResponse response) {
+                    if (response.isSuccess()) {
+                        try {
+//                            We need to set loginUrl for code exchange with the value from auth response.
+//                            options.setLoginUrl(response.asJSONObject().get("sfdc_community_url").toString());
+                            webviewHelper.onWebServerFlowComplete(response.asJSONObject().get("code").toString());
+                        } catch (JSONException | IOException e) {
+                            Log.i("bpage", "Failed to parse code");
+                        }
+                    } else {
+                        Log.i("bpage", "Headless Login Failure: " + response.getStatusCode());
+                        Response errorResponse = response.getRawResponse();
+                        if (errorResponse != null) {
+                            Log.i("bpage", "Error message: " + errorResponse.message());
+                        }
+                    }
+                }
+
+                @Override
+                public void onError(Exception exception) {
+                    Log.i("bpage", "Headless Login Failure: " + exception.getCause()
+                            + "\n\n" + exception.getMessage());
+
+                    runOnUiThread(() -> Toast.makeText(
+                            getApplicationContext(),
+                            exception.getMessage(),
+                            Toast.LENGTH_LONG
+                    ).show());
+                }
+            });
+        });
     }
 
     @Override

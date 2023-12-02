@@ -638,9 +638,10 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         @Override
         protected OAuth2.TokenEndpointResponse doInBackground(Void... nothings) {
             OAuth2.TokenEndpointResponse tokenResponse = null;
+            String loginUrl = "https://msdk-enhanced-dev-ed.my.site.com/headlessvforcesite";
             try {
                 tokenResponse = OAuth2.exchangeCode(HttpAccess.DEFAULT,
-                        URI.create(loginOptions.getLoginUrl()), loginOptions.getOauthClientId(), code, codeVerifier,
+                        URI.create(loginUrl), loginOptions.getOauthClientId(), code, codeVerifier,
                         loginOptions.getOauthCallbackUrl());
             } catch (Exception e) {
                 SalesforceSDKLogger.e(TAG, "Exception occurred while making token request", e);
