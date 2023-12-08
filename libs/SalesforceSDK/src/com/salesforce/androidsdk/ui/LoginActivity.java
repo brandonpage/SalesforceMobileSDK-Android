@@ -32,12 +32,14 @@ import static androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTI
 
 import android.accounts.AccountAuthenticatorResponse;
 import android.accounts.AccountManager;
+import android.app.Activity;
 import android.app.admin.DevicePolicyManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.LinearGradient;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -76,6 +78,7 @@ import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
+import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
@@ -130,7 +133,11 @@ public class LoginActivity extends AppCompatActivity
     private Button biometricAuthenticationButton = null;
     private long AUTH_CONFIG_TASK_TIMEOUT_MILLS = 5000;
 
-	@Override
+    String code = "";
+    String authEndpoint = "";
+
+
+    @Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
         accountAuthenticatorResponse = getIntent().getParcelableExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE);
@@ -211,11 +218,15 @@ public class LoginActivity extends AppCompatActivity
 
 
         // TEST code start
+        SalesforceSDKManager.getInstance().setUseWebServerAuthentication(true);
         SalesforceSDKManager.getInstance().getClientManager().getUnauthenticatedRestClient(this, client -> {
+            // POC Hardcoded creds here
             String creds = "" + ":" + "";
-            String encoodedCreds = Base64.encodeToString(creds.getBytes(), Base64.NO_WRAP);
+            String encoodedCreds = Base64.encodeToString(creds.getBytes(), Base64.URL_SAFE | Base64.NO_WRAP | Base64.NO_PADDING);
             String baseUrl = "https://msdk-enhanced-dev-ed.my.site.com/";
             String OAUTH_AUTH_PATH = "/services/oauth2/authorize";
+            String clientId = "3MVG9CEn_O3jvv0wTqRT0Le6tmzX.EQ9ZvtHL1TG3gHFV.4IvKZyXw5SgdiVPi61mXrpu40mCOhKevEfYNMOm";
+            String redirectUri = "https://msdk-enhanced-dev-ed.my.site.com/services/oauth2/echo";
 
             Map<String, String> headers = new HashMap<>();
             headers.put("Auth-Request-Type", "Named-User");
@@ -223,8 +234,14 @@ public class LoginActivity extends AppCompatActivity
             headers.put("Authorization", "Basic " + encoodedCreds);
 
             MediaType mediaType = MediaType.parse("application/x-www-form-urlencoded");
-            RequestBody body = RequestBody.create(mediaType, "code_challenge_method=SHA256&response_type" +
-                    "=code_credentials&client_id=3MVG9CEn_O3jvv0wTqRT0Le6tmzX.EQ9ZvtHL1TG3gHFV.4IvKZyXw5SgdiVPi61mXrpu40mCOhKevEfYNMOm&redirect_uri=https://msdk-enhanced-dev-ed.my.site.com/services/oauth2/echo");
+//            String bodyString = "response_type=code_credentials" +
+//                    "&client_id=" + clientId +
+//                    "&redirect_uri=" + redirectUri +
+//                    "&code_challenge=" + webviewHelper.codeVerifier;
+            String bodyString = "response_type=code_credentials" +
+                    "&client_id=" + clientId +
+                    "&redirect_uri=" + redirectUri;
+            RequestBody body = RequestBody.create(mediaType, bodyString);
 
             // Requires login url to be set correctly
             RestRequest loginRestRequest = new RestRequest(RestRequest.RestMethod.POST,
@@ -232,6 +249,8 @@ public class LoginActivity extends AppCompatActivity
                     headers);
 
             LoginOptions options = SalesforceSDKManager.getInstance().getLoginOptions(null, baseUrl);
+
+            Activity context = this;
             client.sendAsync(loginRestRequest, new RestClient.AsyncRequestCallback() {
                 @Override
                 public void onSuccess(RestRequest request, RestResponse response) {
@@ -239,7 +258,47 @@ public class LoginActivity extends AppCompatActivity
                         try {
 //                            We need to set loginUrl for code exchange with the value from auth response.
 //                            options.setLoginUrl(response.asJSONObject().get("sfdc_community_url").toString());
-                            webviewHelper.onWebServerFlowComplete(response.asJSONObject().get("code").toString());
+
+
+//                            webviewHelper.onWebServerFlowComplete(response.asJSONObject().get("code").toString());
+
+                            code = response.asJSONObject().get("code").toString();
+                            authEndpoint = response.asJSONObject().get("sfdc_community_url").toString();
+
+                            SalesforceSDKManager.getInstance().getClientManager().getUnauthenticatedRestClient(context
+                            , (ClientManager.RestClientCallback) client1 -> {
+                                String OAUTH_TOKEN_PATH = "/services/oauth2/token";
+                                String clientId = "3MVG9CEn_O3jvv0wTqRT0Le6tmzX.EQ9ZvtHL1TG3gHFV.4IvKZyXw5SgdiVPi61mXrpu40mCOhKevEfYNMOm";
+                                String redirectUri = "https://msdk-enhanced-dev-ed.my.site.com/services/oauth2/echo";
+                                Map<String, String> headers = new HashMap<>();
+
+                                MediaType mediaType = MediaType.parse("application/x-www-form-urlencoded");
+                                String bodyString = "code=" + code +
+                                        "&grant_type=authorization_code" +
+                                        "&client_id=" + clientId +
+                                        "&redirect_uri=" + redirectUri;
+                                RequestBody body = RequestBody.create(mediaType, bodyString);
+
+                                // Requires login url to be set correctly
+                                RestRequest tokenRequest = new RestRequest(RestRequest.RestMethod.POST,
+                                        RestRequest.RestEndpoint.LOGIN, OAUTH_TOKEN_PATH, body,
+                                        headers);
+
+                                client1.sendAsync(tokenRequest, new RestClient.AsyncRequestCallback() {
+                                    @Override
+                                    public void onSuccess(RestRequest request, RestResponse response) {
+                                        Log.i("bpage", "success");
+
+                                        webviewHelper.onAuthFlowComplete(new OAuth2.TokenEndpointResponse(response));
+                                        finish();
+                                    }
+
+                                    @Override
+                                    public void onError(Exception exception) {
+                                        Log.i("bpage", "failure.");
+                                    }
+                                });
+                            });
                         } catch (JSONException | IOException e) {
                             Log.i("bpage", "Failed to parse code");
                         }
@@ -296,15 +355,15 @@ public class LoginActivity extends AppCompatActivity
     // class to replicate its functionality per the deprecation message.
     @Override
     public void finish() {
-        if (accountAuthenticatorResponse != null) {
-            // send the result bundle back if set, otherwise send an error.
-            if (accountAuthenticatorResult != null) {
-                accountAuthenticatorResponse.onResult(accountAuthenticatorResult);
-            } else {
-                accountAuthenticatorResponse.onError(AccountManager.ERROR_CODE_CANCELED, "canceled");
-            }
-            accountAuthenticatorResponse = null;
-        }
+//        if (accountAuthenticatorResponse != null) {
+//            // send the result bundle back if set, otherwise send an error.
+//            if (accountAuthenticatorResult != null) {
+//                accountAuthenticatorResponse.onResult(accountAuthenticatorResult);
+//            } else {
+//                accountAuthenticatorResponse.onError(AccountManager.ERROR_CODE_CANCELED, "canceled");
+//            }
+//            accountAuthenticatorResponse = null;
+//        }
 
         super.finish();
     }

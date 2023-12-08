@@ -641,14 +641,10 @@ public class OAuth2 {
             }
         }
 
-        /**
-         * Parameterized constructor built from refresh flow response.
-         *
-         * @param response Token endpoint response.
-         */
-        public TokenEndpointResponse(Response response) {
+
+        public TokenEndpointResponse(RestResponse response) {
             try {
-                final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
+                final JSONObject parsedResponse = response.asJSONObject();
                 authToken = parsedResponse.getString(ACCESS_TOKEN);
                 instanceUrl = parsedResponse.getString(INSTANCE_URL);
                 idUrl  = parsedResponse.getString(ID);
@@ -688,6 +684,15 @@ public class OAuth2 {
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
             }
+        }
+
+        /**
+         * Parameterized constructor built from refresh flow response.
+         *
+         * @param response Token endpoint response.
+         */
+        public TokenEndpointResponse(Response response) {
+            new TokenEndpointResponse(new RestResponse(response));
         }
 
         private void computeOtherFields() throws URISyntaxException {
