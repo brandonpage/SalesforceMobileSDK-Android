@@ -32,6 +32,7 @@ import android.webkit.URLUtil.isHttpsUrl
 import androidx.lifecycle.lifecycleScope
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException
+import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.BootConfig.getBootConfig
 import com.salesforce.androidsdk.config.BootConfig.isAbsoluteUrl
@@ -309,12 +310,14 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
     protected open val unauthenticatedStartPage
         get() = bootConfig?.unauthenticatedStartPage
 
-    fun logout(callbackContext: CallbackContext?) {
+    @JvmOverloads
+    fun logout(callbackContext: CallbackContext?, reason: OAuth2.LogoutReason = OAuth2.LogoutReason.UNKNOWN) {
         i(TAG, "logout called")
 
         SalesforceSDKManager.getInstance().logout(
             account = null,
-            frontActivity = this
+            frontActivity = this,
+            reason = reason,
         )
 
         callbackContext?.success()

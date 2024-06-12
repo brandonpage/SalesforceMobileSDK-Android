@@ -36,6 +36,7 @@ import android.widget.Toast;
 import com.facebook.react.ReactActivity;
 import com.facebook.react.ReactActivityDelegate;
 import com.facebook.react.bridge.Callback;
+import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.reactnative.R;
 import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
 import com.salesforce.androidsdk.reactnative.bridge.ReactBridgeHelper;
@@ -186,6 +187,20 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
     public void logout(final Callback successCallback) {
         SalesforceReactLogger.i(TAG, "logout called");
         SalesforceReactSDKManager.getInstance().logout(this);
+        if (successCallback != null) {
+            ReactBridgeHelper.invoke(successCallback, "Logout complete");
+        }
+    }
+
+    /**
+     * Method called from bridge to logout.
+     *
+     * @param successCallback Success callback.
+     * @param reason The reason for the logout.
+     */
+    public void logout(final Callback successCallback, OAuth2.LogoutReason reason) {
+        SalesforceReactLogger.i(TAG, "logout called");
+        SalesforceReactSDKManager.getInstance().logout(null, this, true, reason);
         if (successCallback != null) {
             ReactBridgeHelper.invoke(successCallback, "Logout complete");
         }
