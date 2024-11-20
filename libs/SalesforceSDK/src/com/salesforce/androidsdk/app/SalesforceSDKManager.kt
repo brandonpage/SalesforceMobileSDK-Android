@@ -395,9 +395,11 @@ open class SalesforceSDKManager protected constructor(
                 val packageInfo = appContext.packageManager.getPackageInfo(
                     appContext.packageName, 0
                 )
-                appName = appContext.getString(
-                    packageInfo.applicationInfo.labelRes
-                )
+                appName = packageInfo.applicationInfo?.let {
+                    appContext.getString(
+                        it.labelRes
+                    )
+                }
             }
             field
         }.onFailure { e ->
@@ -472,7 +474,7 @@ open class SalesforceSDKManager protected constructor(
             var ailtnAppName: String? = null
             runCatching {
                 val packageInfo = appContext.packageManager.getPackageInfo(appContext.packageName, 0)
-                ailtnAppName = appContext.getString(packageInfo.applicationInfo.labelRes)
+                ailtnAppName = packageInfo.applicationInfo?.let { appContext.getString(it.labelRes) }
             }.onFailure { e ->
                 e(TAG, "Package not found", e)
             }
@@ -1109,7 +1111,7 @@ open class SalesforceSDKManager protected constructor(
             result
         }.onFailure { e ->
             w(TAG, "Package info could not be retrieved", e)
-        }.getOrDefault("")
+        }.getOrDefault("").toString()
 
     /**
      * Adds an app feature code for reporting in the user agent header

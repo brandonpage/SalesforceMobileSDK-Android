@@ -33,6 +33,7 @@ import android.content.Context;
 import androidx.annotation.NonNull;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.ui.JetpackLoginActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
 
 import java.util.Map;
@@ -100,7 +101,7 @@ public class RestExplorerApp extends Application {
 				@NonNull Class<? extends Activity> mainActivity
 		) {
 			if (SalesforceSDKManager.INSTANCE == null) {
-				SalesforceSDKManager.INSTANCE = new RestExplorerSDKManager(context, mainActivity, LoginActivity.class);
+				SalesforceSDKManager.INSTANCE = new RestExplorerSDKManager(context, mainActivity, JetpackLoginActivity.class);
 			}
 			initInternal(context);
 		}
