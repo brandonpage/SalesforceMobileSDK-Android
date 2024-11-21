@@ -1,6 +1,7 @@
 package com.salesforce.androidsdk.ui
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
 import android.view.ViewGroup
 import android.webkit.WebView
@@ -25,6 +26,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
@@ -42,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.font.FontStyle
@@ -125,7 +128,11 @@ class JetpackLoginActivity : ComponentActivity() {
                                 text = { Text("Clear Cookies", color = Color.Gray) },
                             )
                             DropdownMenuItem(
-                                    onClick = { /* */ },
+                                    onClick = {
+                                        this@JetpackLoginActivity.startActivity(
+                                            Intent(baseContext, JetpackUserSwitcherActivity::class.java)
+                                        )
+                                    },
                             text = { Text("Reload", color = Color.Gray) },
                             )
                         }
@@ -212,6 +219,7 @@ class JetpackLoginActivity : ComponentActivity() {
                             )
                             Spacer(modifier = Modifier.padding(10.dp))
                             servers.forEach {
+                                HorizontalDivider(thickness = 1.dp)
                                 LoginServer(it.first, it.second)
                             }
 
@@ -239,16 +247,17 @@ class JetpackLoginActivity : ComponentActivity() {
     @Composable
     fun LoginServer(url: String = "login.salesforce.com", name: String = "Production") {
         Card(
-            modifier = Modifier.padding(15.dp).fillMaxWidth().clickable {
+            modifier = Modifier.padding(top = 10.dp, bottom = 10.dp).fillMaxWidth().clickable {
                 viewModel.selectedSever.value = url
                 viewModel.showBottomSheet.value = false
             },
             colors = CardColors(
-                containerColor = Color(0xFFD9DDDC),
+                containerColor = Color.White,
                 contentColor = Color.Black,
                 disabledContentColor = Color.Gray,
                 disabledContainerColor = Color.Black,
-            )
+            ),
+            shape = RectangleShape,
         ) {
             Text(name, modifier = Modifier.padding(start = 15.dp, end = 15.dp, top = 15.dp), fontSize = 22.sp)
             Text(url, modifier = Modifier.padding(start = 15.dp, end = 15.dp, bottom = 15.dp), fontStyle = FontStyle.Italic)
@@ -277,6 +286,11 @@ class JetpackLoginActivity : ComponentActivity() {
     }
 
     class CustomWebViewClient(private var viewModel: LoginViewModel): WebViewClient(){
+        override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+            return url != null && url.startsWith("https://google.com")
+        }
+
+
         override fun onPageFinished(view: WebView?, url: String?) {
             super.onPageFinished(view, url)
             view?.evaluateJavascript(

@@ -30,10 +30,11 @@ dependencies {
     implementation("androidx.compose.foundation:foundation-android:1.7.5")
     implementation("androidx.compose.material3:material3-android:1.3.1")
     implementation("androidx.compose.ui:ui-tooling-preview-android:1.7.5")
-    implementation("androidx.compose:compose-bom:2024.02.00")
+    implementation(platform("androidx.compose:compose-bom:2024.11.00"))
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test:rules:1.6.1")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.7.5")
 }
 
 android {

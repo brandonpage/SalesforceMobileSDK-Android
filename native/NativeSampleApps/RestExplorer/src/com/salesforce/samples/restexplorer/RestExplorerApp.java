@@ -102,6 +102,7 @@ public class RestExplorerApp extends Application {
 		) {
 			if (SalesforceSDKManager.INSTANCE == null) {
 				SalesforceSDKManager.INSTANCE = new RestExplorerSDKManager(context, mainActivity, JetpackLoginActivity.class);
+//				SalesforceSDKManager.INSTANCE = new RestExplorerSDKManager(context, mainActivity, LoginActivity.class);
 			}
 			initInternal(context);
 		}

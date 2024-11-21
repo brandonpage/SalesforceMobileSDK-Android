@@ -15,7 +15,7 @@ class LoginViewModel: ViewModel() {
      * color light, title color dark, menu color, server picker colors, etc
      */
 
-    internal var backgroundColor = mutableStateOf(Color.Blue)
+    internal var backgroundColor = mutableStateOf(Color.White)
     internal var headerTextColor = derivedStateOf { if (backgroundColor.value.luminance() > 0.5) Color.Black else Color.White }
 
     internal var selectedSever = mutableStateOf("login.salesforce.com")

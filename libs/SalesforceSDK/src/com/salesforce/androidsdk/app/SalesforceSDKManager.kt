@@ -122,6 +122,7 @@ import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getEncryptionKe
 import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity
 import com.salesforce.androidsdk.ui.DevInfoActivity
+import com.salesforce.androidsdk.ui.JetpackUserSwitcherActivity
 import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.util.AuthConfigUtil.getMyDomainAuthConfig
 import com.salesforce.androidsdk.util.EventsObservable
@@ -216,7 +217,8 @@ open class SalesforceSDKManager protected constructor(
     val loginActivityClass: Class<out Activity> = nativeLoginActivity ?: webviewLoginActivityClass
 
     /** The class for the account switcher activity */
-    var accountSwitcherActivityClass = AccountSwitcherActivity::class.java
+//    var accountSwitcherActivityClass = AccountSwitcherActivity::class.java
+    var accountSwitcherActivityClass = JetpackUserSwitcherActivity::class.java
 
     /** The screen lock manager initialization synchronization lock object */
     private val screenLockManagerLock = Any()
