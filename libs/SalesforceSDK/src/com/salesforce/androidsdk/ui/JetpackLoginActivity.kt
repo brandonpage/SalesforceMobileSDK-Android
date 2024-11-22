@@ -43,6 +43,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
@@ -62,6 +63,7 @@ class JetpackLoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        viewModel.loading.value = true
 
         setContentView(
             ComposeView(this).apply {
@@ -80,17 +82,21 @@ class JetpackLoginActivity : ComponentActivity() {
     fun LoginView(viewModel: LoginViewModel = LoginViewModel()) {
         var showMenu by remember { mutableStateOf(false) }
         val sheetState = rememberModalBottomSheetState()
+        val showTopAppBar = true
+        val showBottomAppBar = false
 
         // Temp data
         val servers = listOf(
             Pair("login.salesforce.com", "Production"),
             Pair("test.salesforce.com", "Sandbox"),
-            Pair("msdk-enhanced-dev-ed.my.salesforce.com", "Community"),
+            Pair("msdk-enhanced-dev-ed.my.salesforce.com", "Site"),
+            Pair("https://msdk-enhanced-dev-ed.my.site.com/headless/login", "Community"),
         )
 
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
+                    expandedHeight = if (showTopAppBar) TopAppBarDefaults.TopAppBarExpandedHeight else 0.dp,
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = viewModel.backgroundColor.value),
                     title = {
                         Text(
@@ -159,6 +165,20 @@ class JetpackLoginActivity : ComponentActivity() {
             bottomBar = {
                 BottomAppBar(containerColor = viewModel.backgroundColor.value) {
                     // IDP and Bio Auth buttons here
+                    if (showBottomAppBar) {
+                        Button(
+                            onClick = { /* Save new server */ },
+                            modifier = Modifier.padding(20.dp).fillMaxWidth(),
+                            colors = ButtonColors(
+                                containerColor = Color.Black,
+                                contentColor = Color.Black,
+                                disabledContainerColor = Color.Black,
+                                disabledContentColor = Color.Black
+                            )
+                        ) {
+                            Text(text = "Save", color = Color.White)
+                        }
+                    }
                 }
             },
         ) { innerPadding ->
@@ -250,6 +270,8 @@ class JetpackLoginActivity : ComponentActivity() {
             modifier = Modifier.padding(top = 10.dp, bottom = 10.dp).fillMaxWidth().clickable {
                 viewModel.selectedSever.value = url
                 viewModel.showBottomSheet.value = false
+                viewModel.loading.value = true
+                viewModel.backgroundColor.value = Color.Black
             },
             colors = CardColors(
                 containerColor = Color.White,
@@ -268,7 +290,9 @@ class JetpackLoginActivity : ComponentActivity() {
     @Composable
     fun Webview(paddingValues: PaddingValues) {
         AndroidView(
-            modifier = Modifier.padding(paddingValues),
+            modifier = Modifier.padding(paddingValues).alpha(
+                if (viewModel.loading.value) 0.0f else 100.0f
+            ),
             factory = {
                 val webView = WebView(it).apply {
                     this.layoutParams = ViewGroup.LayoutParams(
@@ -298,6 +322,8 @@ class JetpackLoginActivity : ComponentActivity() {
             ) { result ->
                 viewModel.backgroundColor.value = validateAndExtractBackgroundColor(result) ?: return@evaluateJavascript
             }
+
+            viewModel.loading.value = false
         }
 
         private fun validateAndExtractBackgroundColor(javaScriptResult: String): Color? {

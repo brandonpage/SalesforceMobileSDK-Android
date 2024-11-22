@@ -20,4 +20,6 @@ class LoginViewModel: ViewModel() {
 
     internal var selectedSever = mutableStateOf("login.salesforce.com")
     internal var showBottomSheet = mutableStateOf(false)
+
+    internal var loading = mutableStateOf(false)
 }
