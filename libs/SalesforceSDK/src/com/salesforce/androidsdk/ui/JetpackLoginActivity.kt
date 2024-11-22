@@ -9,11 +9,14 @@ import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
@@ -23,6 +26,7 @@ import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,6 +46,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
@@ -182,6 +187,18 @@ class JetpackLoginActivity : ComponentActivity() {
                 }
             },
         ) { innerPadding ->
+            if (viewModel.loading.value) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator(
+                        color = Color.Black,
+                        modifier = Modifier.size(50.dp).fillMaxSize(),
+                    )
+                }
+            }
+
             Webview(innerPadding)
 
             if (viewModel.showBottomSheet.value) {
@@ -271,7 +288,7 @@ class JetpackLoginActivity : ComponentActivity() {
                 viewModel.selectedSever.value = url
                 viewModel.showBottomSheet.value = false
                 viewModel.loading.value = true
-                viewModel.backgroundColor.value = Color.Black
+                viewModel.backgroundColor.value = Color.White
             },
             colors = CardColors(
                 containerColor = Color.White,
