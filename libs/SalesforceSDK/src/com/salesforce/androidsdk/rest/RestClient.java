@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import android.util.Log;
+
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -141,6 +143,7 @@ public class RestClient {
 		this.clientInfo = clientInfo;
         this.httpAccessor = httpAccessor;
 		this.authTokenProvider = authTokenProvider;
+		Log.i("bpage", "RestClient setting authToken: " + authToken);
 		setOAuthRefreshInterceptor(authToken);
 		setOkHttpClientBuilder();
 		setOkHttpClient(null);
@@ -182,6 +185,7 @@ public class RestClient {
 	 * Sets the OAuthRefreshInterceptor associated with this user account.
 	 */
     private synchronized void setOAuthRefreshInterceptor(String authToken) {
+		Log.i("bpage", "setOAuthRefreshInterceptor: \nauthToken: " + authToken);
 		final String cacheKey = getCacheKey();
 		OAuthRefreshInterceptor oAuthRefreshInterceptor = OAUTH_REFRESH_INTERCEPTORS.get(cacheKey);
 
@@ -204,11 +208,14 @@ public class RestClient {
 
 		// If none cached, create new one
 		if (okHttpClientBuilder == null) {
-			if (cacheKey.equals("unauthenticated")) {
-				okHttpClientBuilder = httpAccessor.getUnauthenticatedOkHttpBuilder();
-			} else {
-				okHttpClientBuilder = httpAccessor.getOkHttpClientBuilder()
-						.addInterceptor(getOAuthRefreshInterceptor());
+//			if (cacheKey.equals("unauthenticated")) {
+//				okHttpClientBuilder = httpAccessor.getUnauthenticatedOkHttpBuilder();
+//			} else {
+//				okHttpClientBuilder = httpAccessor.getOkHttpClientBuilder()
+//						.addInterceptor(getOAuthRefreshInterceptor());
+			okHttpClientBuilder = httpAccessor.createNewClientBuilder();
+			if (!cacheKey.equals("unauthenticated")) {
+				okHttpClientBuilder.addInterceptor(getOAuthRefreshInterceptor());
 			}
 
 			OK_CLIENT_BUILDERS.put(getCacheKey(), okHttpClientBuilder);

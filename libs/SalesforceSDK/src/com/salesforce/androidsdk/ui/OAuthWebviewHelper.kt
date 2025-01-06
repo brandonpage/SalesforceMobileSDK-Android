@@ -46,6 +46,7 @@ import android.security.KeyChain.getCertificateChain
 import android.security.KeyChain.getPrivateKey
 import android.security.KeyChainAliasCallback
 import android.text.TextUtils.isEmpty
+import android.util.Log
 import android.view.View.INVISIBLE
 import android.view.View.VISIBLE
 import android.webkit.ClientCertRequest
@@ -965,6 +966,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             id?.customPermissions?.let { customPermissions ->
                 instance.adminPermsManager?.setPrefs(customPermissions, account)
             }
+
+            Log.i("bpage", "OAuthWebviewHelper \nAuth Token: ${account.authToken} \nRefresh Token: ${account.refreshToken}")
 
             instance.userAccountManager.authenticatedUsers?.let { existingUsers ->
                 // Check if the user already exists

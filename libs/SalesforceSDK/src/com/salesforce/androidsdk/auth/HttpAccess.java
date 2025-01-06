@@ -102,11 +102,12 @@ public class HttpAccess {
      * and user agent interceptor for an authenticated client.
      */
     public OkHttpClient.Builder getOkHttpClientBuilder() {
-        if (okHttpBuilder == null) {
-            okHttpBuilder = createNewClientBuilder();
-        }
-
-        return okHttpBuilder;
+//        if (okHttpBuilder == null) {
+//            okHttpBuilder = createNewClientBuilder();
+//        }
+//
+//        return okHttpBuilder;
+        return createNewClientBuilder();
     }
 
     /**
@@ -115,11 +116,23 @@ public class HttpAccess {
      * and user agent interceptor for an unauthenticated client.
      */
     public OkHttpClient.Builder getUnauthenticatedOkHttpBuilder() {
-        if (unauthenticatedOkHttpBuilder == null) {
-            unauthenticatedOkHttpBuilder = createNewClientBuilder();
-        }
+//        if (unauthenticatedOkHttpBuilder == null) {
+//            unauthenticatedOkHttpBuilder = createNewClientBuilder();
+//        }
+//
+//        return unauthenticatedOkHttpBuilder;
+        return createNewClientBuilder();
+    }
 
-        return unauthenticatedOkHttpBuilder;
+    public OkHttpClient.Builder createNewClientBuilder() {
+        ConnectionSpec connectionSpec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+                .tlsVersions(TlsVersion.TLS_1_1, TlsVersion.TLS_1_2)
+                .build();
+        return new OkHttpClient.Builder()
+                .connectionSpecs(Collections.singletonList(connectionSpec))
+                .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
+                .addNetworkInterceptor(new UserAgentInterceptor());
     }
 
     /**
@@ -128,7 +141,8 @@ public class HttpAccess {
      */
     public synchronized OkHttpClient getOkHttpClient() {
         if (okHttpClient == null) {
-            okHttpClient = getOkHttpClientBuilder().build();
+//            okHttpClient = getOkHttpClientBuilder().build();
+            okHttpClient = createNewClientBuilder().build();
         }
         return okHttpClient;
     }
@@ -158,16 +172,16 @@ public class HttpAccess {
     	return userAgent;
     }
 
-    private OkHttpClient.Builder createNewClientBuilder() {
-        ConnectionSpec connectionSpec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
-                .tlsVersions(TlsVersion.TLS_1_1, TlsVersion.TLS_1_2)
-                .build();
-        return new OkHttpClient.Builder()
-                .connectionSpecs(Collections.singletonList(connectionSpec))
-                .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
-                .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
-                .addNetworkInterceptor(new UserAgentInterceptor());
-    }
+//    private OkHttpClient.Builder createNewClientBuilder() {
+//        ConnectionSpec connectionSpec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+//                .tlsVersions(TlsVersion.TLS_1_1, TlsVersion.TLS_1_2)
+//                .build();
+//        return new OkHttpClient.Builder()
+//                .connectionSpecs(Collections.singletonList(connectionSpec))
+//                .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+//                .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
+//                .addNetworkInterceptor(new UserAgentInterceptor());
+//    }
 
     /**
      * Exception thrown if the device is offline, during an attempted HTTP call.

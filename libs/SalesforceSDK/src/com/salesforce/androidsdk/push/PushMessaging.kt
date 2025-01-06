@@ -159,10 +159,11 @@ object PushMessaging {
                 FirebaseInstallations.getInstance(firebaseApp).delete()
                 firebaseApp.delete()
             }
+
             unregisterSFDCPush(context, account)
         }
 
-        unregisterSFDCPush(context, account)
+//        unregisterSFDCPush(context, account)
     }
 
     /**

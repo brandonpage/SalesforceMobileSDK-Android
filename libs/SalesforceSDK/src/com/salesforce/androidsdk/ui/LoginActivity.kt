@@ -168,7 +168,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         val loginOptions = fromBundleWithSafeLoginUrl(intent.extras)
 
         // Protect against screenshots
-        window.setFlags(FLAG_SECURE, FLAG_SECURE)
+//        window.setFlags(FLAG_SECURE, FLAG_SECURE)
 
         // Fetch authentication configuration if required
         salesforceSDKManager.fetchAuthenticationConfiguration()

@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.push
 
 import android.content.Context
+import android.util.Log
 import androidx.work.ListenableWorker.Result.failure
 import androidx.work.ListenableWorker.Result.success
 import androidx.work.Worker
@@ -66,6 +67,9 @@ internal class PushNotificationsRegistrationChangeWorker(
             UserAccount(JSONObject(userAccountJson))
         } /* User account is optional where null specifies all accounts */
 
+        Log.i("bpage", "PushNotificationsRegistrationChangeWorker - user account\n" +
+                "auth token: ${userAccount?.authToken}\nrefresh token: ${userAccount?.refreshToken}")
+
         // Instantiate push notifications registrar...
         val pushNotificationsRegistrar = SalesforceSDKManager.getInstance().pushServiceType.newInstance()
 
@@ -74,21 +78,25 @@ internal class PushNotificationsRegistrationChangeWorker(
 
             // ...The input data didn't provide a user account...
             null ->
-                // ...Change push notification registration for all user accounts.
-                SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers?.forEach { nextUserAccount ->
-                    pushNotificationsRegistrar.performRegistrationChange(
-                        pushNotificationsRegistrationAction == Register,
-                        nextUserAccount
-                    )
+                Log.i("bpage", "user account null").also {
+                    // ...Change push notification registration for all user accounts.
+                    SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers?.forEach { nextUserAccount ->
+                        pushNotificationsRegistrar.performRegistrationChange(
+                            pushNotificationsRegistrationAction == Register,
+                            nextUserAccount
+                        )
+                    }
                 }
 
             // ...The input data provided a specific user account...
             else ->
-                // ...Change push notification registration for the specified user account.
-                pushNotificationsRegistrar.performRegistrationChange(
-                    pushNotificationsRegistrationAction == Register,
-                    userAccount
-                )
+                Log.i("bpage", "user account NOT null").also {
+                    // ...Change push notification registration for the specified user account.
+                    pushNotificationsRegistrar.performRegistrationChange(
+                        pushNotificationsRegistrationAction == Register,
+                        userAccount
+                    )
+                }
         }
 
         return success()

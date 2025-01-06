@@ -27,8 +27,10 @@
 package com.salesforce.androidsdk.push
 
 import android.content.Intent
+import android.util.Log
 import androidx.work.Constraints
 import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
@@ -37,7 +39,7 @@ import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.analytics.security.Encryptor
 import com.salesforce.androidsdk.app.Features.FEATURE_PUSH_NOTIFICATIONS
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
+import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT
 import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_EVENT
 import com.salesforce.androidsdk.push.PushMessaging.clearRegistrationInfo
@@ -161,6 +163,11 @@ open class PushService {
         clearRegistrationInfo(context, account)
         context.sendBroadcast(
             Intent(
+                UNREGISTERED_ATTEMPT_COMPLETE_EVENT
+            ).setPackage(packageName)
+        )
+        context.sendBroadcast(
+            Intent(
                 UNREGISTERED_EVENT
             ).setPackage(packageName)
         )
@@ -243,6 +250,7 @@ open class PushService {
             }
 
             getRestClient(account)?.let { restClient ->
+                Log.i("bpage", "PushService: \nauth token: " + restClient.authToken + "\nrefresh token: " + restClient.refreshToken);
                 val apiVersion = ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().appContext)
                 // TODO remove once MSDK default api version is 61 or greater
                 if (apiVersion.compareTo("v61.0") >= 0) {
@@ -359,6 +367,9 @@ open class PushService {
         account: UserAccount
     ) = SalesforceSDKManager.getInstance().clientManager.let { clientManager ->
 
+        Log.i("bpage", "getRestClient: \nauth token: " +
+                "${account.authToken}\nrefresh token: ${account.refreshToken}")
+
         /*
          * The reason we can't directly call 'peekRestClient()' here is because
          * ClientManager does not hand out a REST client when a logout is in
@@ -393,7 +404,7 @@ open class PushService {
                     account.csrfToken
                 ),
                 account.authToken,
-                DEFAULT,
+                HttpAccess.DEFAULT,
                 AccMgrAuthTokenProvider(
                     clientManager,
                     account.instanceServer,
@@ -407,7 +418,10 @@ open class PushService {
                 "Failed to get REST client",
                 throwable
             )
-        }.getOrNull()
+        }.getOrNull().also {
+            Log.i("bpage", "getRestClient -- rest client! \nauth token: " +
+                    "${it?.authToken}\nrefresh token: ${it?.refreshToken}")
+        }
     }
 
     companion object {
@@ -437,6 +451,8 @@ open class PushService {
         protected const val UNREGISTRATION_STATUS_SUCCEEDED = 2
         protected const val UNREGISTRATION_STATUS_FAILED = 3
 
+        private const val PUSH_NOTIFICATIONS_UNREGISTRATION_WORK_NAME = "SalesforcePushNotificationsUnregistrationWork"
+
         /**
          * Enqueues a change to one or more user accounts' push notifications
          * registration as persistent work via Android background tasks.
@@ -456,10 +472,13 @@ open class PushService {
             // Require network connectivity in case the user is logging out while offline.
             val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
             val userAccountJson = userAccount?.toJson()?.toString()
+            Log.i("bpage", "enqueue push, user account: $userAccountJson")
             val workData = Data.Builder()
                 .putString("USER_ACCOUNT", userAccountJson)
                 .putString("ACTION", action.name)
                 .build()
+
+
             val workRequest: OneTimeWorkRequest =
                 OneTimeWorkRequest.Builder(PushNotificationsRegistrationChangeWorker::class.java)
                     .setInputData(workData)
@@ -467,10 +486,15 @@ open class PushService {
                     .setConstraints(constraints)
                     .build()
 
-            workManager.enqueue(workRequest)
+//            workManager.enqueue(workRequest)
+            workManager.enqueueUniqueWork(
+                "PushNotificationsRegistration",
+                ExistingWorkPolicy.REPLACE,
+                workRequest
+            )
 
-            if (action == Deregister) {
-                // Send broadcast now to finish logout in case we are offline.
+            // Send broadcast now to finish logout if we are offline.
+            if (action == Deregister && !HttpAccess.DEFAULT.hasNetwork()) {
                 context.sendBroadcast(
                     Intent(
                         UNREGISTERED_ATTEMPT_COMPLETE_EVENT
