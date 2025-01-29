@@ -46,6 +46,7 @@ jobs:
         with:
           ruby-version: '3.2'
       - name: Report Static Analysis
+        if: ${{ github.event_name }} == 'pull_request'
         env:
           DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LIB: ${{ inputs.lib }}
@@ -53,7 +54,7 @@ jobs:
           cd .github/DangerFiles
           gem install bundler
           bundle install
-          danger --dangerfile=StaticAnalysis.rb --danger_id=${{ inputs.lib }}
+          danger --dangerfile=StaticAnalysis.rb --danger_id=${{ inputs.lib }} --verbose
       - name: Build for Testing
         if: success() || failure()
         run: |
@@ -120,8 +121,8 @@ jobs:
         run: |
           ./gradlew libs:${{ inputs.lib }}:convertCodeCoverage
       - uses: codecov/codecov-action@v4
+        if: success() || failure()
         with:
           flags: ${{ inputs.lib }}
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-        if: success() || failure()
