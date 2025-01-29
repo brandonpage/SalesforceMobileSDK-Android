@@ -21,12 +21,12 @@ jobs:
           ./install.sh
           echo $TEST_CREDENTIALS > ./shared/test/test_credentials.json
       - name: Hybrid Dependencies
-        if: ${{ inputs.lib }} == 'SalesforceHybrid'
+        if: ${{ inputs.lib == 'SalesforceHybrid' }}
         run: |
           npm install -g cordova
           cordova telemetry off
       - name: React Native Dependencies
-        if: ${{ inputs.lib }} == 'SalesforceReact'
+        if: ${{ inputs.lib  == 'SalesforceReact' }}
         run: |
           npm install -g typescript
       - uses: actions/setup-java@v4
@@ -41,7 +41,7 @@ jobs:
       - name: Run Lint
         if: ${{ github.event_name }} == 'pull_request'
         run: |
-          ./gradlew libs:<< parameters.lib >>:lint
+          ./gradlew libs:${{ inputs.lib }}:lint
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
@@ -73,7 +73,7 @@ jobs:
           FULL_API_RANGE="28 29 30 31 32 33 34 35"
 
           DEVICES=""
-          # if (( ${{ github.event_name }} == 'pull_request' ))
+          # if (( ${{ github.event_name == 'pull_request' }} ))
           if (( $true ))
           then
             DEVICES="--device model=MediumPhone.arm,version=${DEFAULT_API_VERSION},locale=en,orientation=portrait "
