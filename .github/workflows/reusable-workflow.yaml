@@ -37,9 +37,9 @@ jobs:
           # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
           DEFAULT_API_VERSION="34" 
           FULL_API_RANGE="28 29 30 31 32 33 34 35"
-          
+
           DEVICES=""
-          if (( pull_request_target == 'pull_request' ))
+          if (( ${{ github.event_name == 'pull_request' }} ))
             then
                   DEVICES="--device model=MediumPhone.arm,version=${DEFAULT_API_VERSION},locale=en,orientation=portrait "
             else
