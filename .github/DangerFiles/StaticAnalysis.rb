@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+warn("#{ENV['LIB']} Static Analysis Test")
+
 report_file_path = "../../libs/#{ENV['LIB']}/build/reports/lint-results-debug.xml"
 if File.file?(report_file_path)
     android_lint.skip_gradle_task = true
