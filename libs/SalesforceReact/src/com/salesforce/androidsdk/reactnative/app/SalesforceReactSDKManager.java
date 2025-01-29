@@ -55,7 +55,6 @@ import java.util.Map;
  * SDK Manager for all react native applications
  */
 public class SalesforceReactSDKManager extends MobileSyncSDKManager {
-
     /**
      * Protected constructor.
      *
