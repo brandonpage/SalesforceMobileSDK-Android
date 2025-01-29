@@ -1,10 +1,10 @@
 # List of Android libraries for testing
-SCHEMES = ['SalesforceAnalytics', 'SalesforceSDK', 'SmartStore', 'MobileSync', 'SalesforceHybrid', 'SalesforceReact']
+LIBS = ['SalesforceAnalytics', 'SalesforceSDK', 'SmartStore', 'MobileSync', 'SalesforceHybrid', 'SalesforceReact']
 
 modifed_libs = Set[]
 for file in (git.modified_files + git.added_files);
     scheme = file.split("libs/").last.split("/").first
-    if SCHEMES.include?(scheme) 
+    if LIBS.include?(scheme) 
         modifed_libs.add(scheme)
     end
 end

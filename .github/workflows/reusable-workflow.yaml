@@ -35,31 +35,34 @@ jobs:
       - name: Run Tests
         run: |
           # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
-          DEFAULT_API_LEVEL="34" 
+          DEFAULT_API_VERSION="34" 
           FULL_API_RANGE="28 29 30 31 32 33 34 35"
 
           DEVICES=""
-          if (( ${{ github.event_name }} == 'pull_request' ))
+          # if (( ${{ github.event_name == 'pull_request' }} ))
+          if (( $true ))
           then
-              DEVICES="--device model=MediumPhone.arm,version=$DEFAULT_API_VERSION,locale=en,orientation=portrait  \"
+            DEVICES="--device model=MediumPhone.arm,version=${DEFAULT_API_VERSION},locale=en,orientation=portrait "
           else
-              for level in $FULL_API_RANGE
-              do
-                  DEVICES+="--device model=MediumPhone.arm,version=$level,locale=en,orientation=portrait  \"
-              done
+            for LEVEL in $FULL_API_RANGE
+            do
+                DEVICES+="--device model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait "
+            done
           fi
 
-          gcloud firebase test android run \
-              --project mobile-apps-firebase-test \
-              --type instrumentation \
-              --app "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk" \
-              --test=libs/${{ inputs.lib }}/build/outputs/apk/androidTest/debug/${{ inputs.lib }}-debug-androidTest.apk \
-              $DEVICES
-              --environment-variables coverage=true,coverageFile="/sdcard/coverage.ec"  \
-              --directories-to-pull=/sdcard  \
-              --results-dir=${{ inputs.lib }}-${{github.run_number}} \
-              --results-history-name=${{ inputs.lib }}  \
-              --timeout=20m --no-auto-google-login --no-record-video --no-performance-metrics --num-flaky-test-attempts=1
+          COMMAND="gcloud firebase test android run "
+          COMMAND+="--project mobile-apps-firebase-test "
+          COMMAND+="--type instrumentation "
+          COMMAND+="--app \"native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk\" "
+          COMMAND+="--test=libs/${{ inputs.lib }}/build/outputs/apk/androidTest/debug/${{ inputs.lib }}-debug-androidTest.apk "
+          COMMAND+="${DEVICES}"
+          COMMAND+="--environment-variables coverage=true,coverageFile=\"/sdcard/coverage.ec\" "
+          COMMAND+="--directories-to-pull=/sdcard  "
+          COMMAND+="--results-dir=${{ inputs.lib }}-${{github.run_number}} "
+          COMMAND+="--results-history-name=${{ inputs.lib }} "
+          COMMAND+="--timeout=20m --no-auto-google-login --no-record-video --no-performance-metrics --num-flaky-test-attempts=1"
+
+          eval "$COMMAND"
       - name: Copy Test Results
         if: success() || failure()
         run: |
@@ -83,7 +86,7 @@ jobs:
       - name: Convert Code Coverage
         if: success() || failure()
         run: |
-          ./gradlew libs:<< parameters.lib >>:convertCodeCoverage
+          ./gradlew libs:${{ inputs.lib }}:convertCodeCoverage
       - uses: codecov/codecov-action@v4
         with:
           flags: ${{ inputs.lib }}

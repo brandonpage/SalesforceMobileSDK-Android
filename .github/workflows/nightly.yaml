@@ -2,8 +2,7 @@ name: Nightly Tests
 
 on: 
   schedule:
-    - cron: "0 2 * * 3"  # Test!
-    # - cron: "0 5 * * 2,6"  # cron is UTC, this translates to 10 PM PST Mon and Fri.
+    - cron: "0 5 * * 2,6"  # cron is UTC, this translates to 10 PM PST Mon and Fri.
 
 jobs:
   ios-pr:

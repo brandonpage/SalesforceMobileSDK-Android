@@ -2,9 +2,11 @@ name: Pull Request
 
 on:
   # Dangerious without Member Check setup!
-  pull_request_target:
+  # pull_request_target:
+  pull_request:
     branches:
-      - dev
+      - github-actions
+      # - dev
 
 jobs:
   static-analysis:
@@ -41,13 +43,22 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '21'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
       - name: Report Static Analysis
         env:
           DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd .github/DangerFiles
-          bundle update && bundle install
-          bundle exec danger --dangerfile=StaticAnalysis.rb --danger_id=StaticAnalysis
+          gem install bundler
+          bundle install
+          danger --dangerfile=StaticAnalysis.rb --danger_id=StaticAnalysis
 
   test-orchestrator:
     runs-on: ubuntu-latest
@@ -79,14 +90,18 @@ jobs:
           fetch-depth: 100
           # This is dangerous without the member check
           ref: ${{ github.event.pull_request.head.sha }}
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
       - name: Determine Tests to Run
         id: test-orchestrator
         env:
           DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd .github/DangerFiles
-          bundle update && bundle install
-          bundle exec danger --dangerfile=TestOrchestrator.rb
+          gem install bundler
+          bundle install
+          danger --dangerfile=TestOrchestrator.rb
 
   android-pr:
     needs: [test-orchestrator]
