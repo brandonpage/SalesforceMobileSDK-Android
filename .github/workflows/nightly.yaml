@@ -1,6 +1,7 @@
 name: Nightly Tests
 
 on: 
+  workflow_dispatch:
   schedule:
     - cron: "0 5 * * 2,6"  # cron is UTC, this translates to 10 PM PST Mon and Fri.
 
