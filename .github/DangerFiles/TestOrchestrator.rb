@@ -6,6 +6,8 @@ warn("Big PR, try to keep changes smaller if you can.", sticky: true) if git.lin
 # Redirect contributors to PR to dev.
 # fail("Please re-submit this PR to the dev branch, we may have already fixed your issue.", sticky: true) if github.branch_for_base != "dev"
 
+warn("Orchestrator test")
+
 # List of Android libraries for testing
 LIBS = ['SalesforceAnalytics', 'SalesforceSDK', 'SmartStore', 'MobileSync', 'SalesforceHybrid', 'SalesforceReact']
 
