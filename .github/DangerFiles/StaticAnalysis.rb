@@ -5,11 +5,11 @@ warn("Big PR, try to keep changes smaller if you can.", sticky: true) if git.lin
 
 # Redirect contributors to PR to dev.
 
-
 # Static Analysis
 # List of Android libraries for testing
 LIBS = ['SalesforceAnalytics', 'SalesforceSDK', 'SmartStore', 'MobileSync', 'SalesforceHybrid', 'SalesforceReact']
 
+Dir.chdir "../.."
 LIBS.each do |lib|
     system("./gradlew libs:#{lib}:lint")
 

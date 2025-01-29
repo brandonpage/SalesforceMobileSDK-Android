@@ -86,7 +86,7 @@ jobs:
       - name: Convert Code Coverage
         if: success() || failure()
         run: |
-          ./gradlew libs:<< parameters.lib >>:convertCodeCoverage
+          ./gradlew libs:${{ inputs.lib }}:convertCodeCoverage
       - uses: codecov/codecov-action@v4
         with:
           flags: ${{ inputs.lib }}
