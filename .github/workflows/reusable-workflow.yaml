@@ -1,0 +1,92 @@
+on:
+    workflow_dispatch:
+    workflow_call:
+      inputs:
+        lib:
+          required: true
+          type: string
+    
+jobs:
+  test-android:
+    runs-on: ubuntu-latest    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Install Dependencies
+        run: ./install.sh
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+      - name: Build for Testing
+        run: |
+          ./gradlew libs:${{ inputs.lib }}:assembleAndroidTest
+          ./gradlew native:NativeSampleApps:RestExplorer:assembleDebug
+      - uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
+      - uses: 'google-github-actions/setup-gcloud@v2'
+      - name: Run Tests
+        run: |
+          # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
+          DEFAULT_API_LEVEL="34" 
+          FULL_API_RANGE="28 29 30 31 32 33 34 35"
+
+          DEVICES=""
+          if (( ${{ github.event_name }} == 'pull_request' ))
+          then
+              DEVICES="--device model=MediumPhone.arm,version=$DEFAULT_API_VERSION,locale=en,orientation=portrait  \"
+          else
+              for level in $FULL_API_RANGE
+              do
+                  DEVICES+="--device model=MediumPhone.arm,version=$level,locale=en,orientation=portrait  \"
+              done
+          fi
+
+          gcloud firebase test android run \
+              --project mobile-apps-firebase-test \
+              --type instrumentation \
+              --app "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk" \
+              --test=libs/${{ inputs.lib }}/build/outputs/apk/androidTest/debug/${{ inputs.lib }}-debug-androidTest.apk \
+              $DEVICES
+              --environment-variables coverage=true,coverageFile="/sdcard/coverage.ec"  \
+              --directories-to-pull=/sdcard  \
+              --results-dir=${{ inputs.lib }}-${{github.run_number}} \
+              --results-history-name=${{ inputs.lib }}  \
+              --timeout=20m --no-auto-google-login --no-record-video --no-performance-metrics --num-flaky-test-attempts=1
+      - name: Copy Test Results
+        if: success() || failure()
+        run: |
+          gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${{ inputs.lib }}-${{github.run_number}} > /dev/null 2>&1
+          if [ $? == 0 ]
+          then
+            mkdir -p firebase/results
+            gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${{ inputs.lib }}-${{github.run_number}} | tail -1`*" ./firebase/
+            mv firebase/test_result_1.xml firebase/results
+          else
+            echo "No test results found"
+            exit 1
+          fi
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: ${{ inputs.lib }} Test Results
+          path: firebase/results/*.xml    
+          reporter: java-junit
+      - name: Convert Code Coverage
+        if: success() || failure()
+        run: |
+          ./gradlew libs:<< parameters.lib >>:convertCodeCoverage
+      - uses: codecov/codecov-action@v4
+        with:
+          flags: ${{ inputs.lib }}
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        if: success() || failure()
