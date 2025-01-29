@@ -41,15 +41,13 @@ jobs:
           DEVICES=""
           if (( ${{ github.event_name == 'pull_request' }} ))
             then
-                  DEVICES="--device model=MediumPhone.arm,version=${DEFAULT_API_VERSION},locale=en,orientation=portrait "
+                  DEVICES="--device model=MediumPhone.arm,version=${DEFAULT_API_VERSION},locale=en,orientation=portrait \ "
             else
                   for LEVEL in $FULL_API_RANGE
                   do
-                      DEVICES+="--device model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait "
+                      DEVICES+="--device model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait \ "
                   done
             fi
-
-          DEVICES+="\ "
 
           gcloud firebase test android run \
               --project mobile-apps-firebase-test \
