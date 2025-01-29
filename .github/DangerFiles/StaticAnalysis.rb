@@ -6,19 +6,11 @@ warn("Big PR, try to keep changes smaller if you can.", sticky: true) if git.lin
 # Redirect contributors to PR to dev.
 
 # Static Analysis
-# List of Android libraries for testing
-LIBS = ['SalesforceAnalytics', 'SalesforceSDK', 'SmartStore', 'MobileSync', 'SalesforceHybrid', 'SalesforceReact']
-
-Dir.chdir "../.."
-LIBS.each do |lib|
-    system("./gradlew libs:#{lib}:lint")
-
-    if File.file?("libs/#{lib}/build/reports/lint-results-debug.xml")
-        android_lint.skip_gradle_task = true
-        android_lint.report_file = "libs/#{lib}/build/reports/lint-results-debug.xml"
-        android_lint.filtering = true
-        android_lint.lint(inline_mode: true)
-    else
-        fail("No Lint Results for #{lib}.")
-    end
-end
+if File.file?("libs/#{ENV['LIB']}/build/reports/lint-results-debug.xml")
+    android_lint.skip_gradle_task = true
+    android_lint.report_file = "libs/#{ENV['LIB']}/build/reports/lint-results-debug.xml"
+    android_lint.filtering = true
+    android_lint.lint(inline_mode: true)
+  else
+    fail("No Lint Results.")
+  end

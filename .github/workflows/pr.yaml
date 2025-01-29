@@ -9,57 +9,6 @@ on:
       # - dev
 
 jobs:
-  static-analysis:
-    runs-on: ubuntu-latest
-    steps:
-    #   - name: Check Write Permission
-    #     uses: octokit/request-action@v2.x
-    #     id: check_permissions
-    #     with:
-    #       route: GET /repos/${{ github.repository }}/collaborators/${{ github.triggering_actor }}/permission
-    #     env:
-    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #   - name: Debug Permission Response
-    #     run: |
-    #       echo "Permission raw response: ${{ steps.check_permissions.outputs.data }}"
-    #   - name: Validate Write Permission
-    #     run: |
-    #       permission=$(echo "${{ fromJson(steps.check_permissions.outputs.data).permission }}")
-    #       echo "User ${{ github.triggering_actor }} has permission: $permission"
-    #       if [[ "$permission" != "write" && "$permission" != "admin" ]]; then
-    #         echo "User ${{ github.triggering_actor }} does not have sufficient permission (write or admin) to proceed. Someone from the team needs to rerun this workflow AFTER it has been deemed safe."
-    #         exit 1
-    #       fi
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          # We need a sufficient depth or Danger will occasionally run into issues checking which files were modified.
-          fetch-depth: 100
-          # This is dangerous without the member check
-          ref: ${{ github.event.pull_request.head.sha }}
-      - name: Install Dependencies
-        run: ./install.sh
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '21'
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: 8.7
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.2'
-      - name: Report Static Analysis
-        env:
-          DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          cd .github/DangerFiles
-          gem install bundler
-          bundle install
-          danger --dangerfile=StaticAnalysis.rb --danger_id=StaticAnalysis
-
   test-orchestrator:
     runs-on: ubuntu-latest
     outputs:

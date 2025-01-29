@@ -12,9 +12,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          # We need a sufficient depth or Danger will occasionally run into issues checking which files were modified.
+          fetch-depth: 100
       - name: Install Dependencies
-        run: ./install.sh
+        env: 
+          TEST_CREDENTIALS: ${{ secrets.TEST_CREDENTIALS }}
+        run: |
+          ./install.sh
+          echo $TEST_CREDENTIALS > ./shared/test/test_credentials.json
+      - name: Hybrid Dependencies
+        if: ${{ inputs.lib }} == 'SalesforceHybrid'
+        run: |
+          npm install -g cordova
+          cordova telemetry off
+      - name: React Native Dependencies
+        if: ${{ inputs.lib }} == 'SalesforceReact'
+        run: |
+          npm install -g typescript
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -24,22 +38,42 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.7
+      - name: Run Lint
+        if: ${{ github.event_name }} == 'pull_request'
+        run: |
+          ./gradlew libs:<< parameters.lib >>:lint
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+      - name: Report Static Analysis
+        env:
+          DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LIB: ${{ inputs.lib }}
+        run: |
+          cd .github/DangerFiles
+          gem install bundler
+          bundle install
+          danger --dangerfile=StaticAnalysis.rb --danger_id=StaticAnalysis
       - name: Build for Testing
+        if: success() || failure()
         run: |
           ./gradlew libs:${{ inputs.lib }}:assembleAndroidTest
           ./gradlew native:NativeSampleApps:RestExplorer:assembleDebug
       - uses: 'google-github-actions/auth@v2'
+        if: success() || failure()
         with:
           credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
       - uses: 'google-github-actions/setup-gcloud@v2'
+        if: success() || failure()
       - name: Run Tests
+        if: success() || failure()
         run: |
           # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
           DEFAULT_API_VERSION="34" 
           FULL_API_RANGE="28 29 30 31 32 33 34 35"
 
           DEVICES=""
-          # if (( ${{ github.event_name == 'pull_request' }} ))
+          # if (( ${{ github.event_name }} == 'pull_request' ))
           if (( $true ))
           then
             DEVICES="--device model=MediumPhone.arm,version=${DEFAULT_API_VERSION},locale=en,orientation=portrait "
