@@ -53,7 +53,7 @@ jobs:
         env:
           DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LIB: ${{ inputs.lib }}
-        run: danger --dangerfile=.github/DangerFiles/StaticAnalysis.rb --danger_id="${{ inputs.lib }}"
+        run: bundle exec danger --dangerfile=.github/DangerFiles/StaticAnalysis.rb --danger_id="${{ inputs.lib }}"
       - name: Build for Testing
         if: success() || failure()
         run: |
