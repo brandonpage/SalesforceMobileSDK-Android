@@ -54,7 +54,7 @@ jobs:
           cd .github/DangerFiles
           gem install bundler
           bundle install
-          danger --dangerfile=StaticAnalysis.rb --danger_id=${{ inputs.lib }} --verbose
+          danger --dangerfile=StaticAnalysis.rb --verbose
       - name: Build for Testing
         if: success() || failure()
         run: |
