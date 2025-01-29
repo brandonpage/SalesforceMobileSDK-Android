@@ -47,6 +47,7 @@ jobs:
           DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd .github/DangerFiles
+          gem install bundler
           bundle update && bundle install
           bundle exec danger --dangerfile=StaticAnalysis.rb --danger_id=StaticAnalysis
 
@@ -86,6 +87,7 @@ jobs:
           DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd .github/DangerFiles
+          gem install bundler
           bundle update && bundle install
           bundle exec danger --dangerfile=TestOrchestrator.rb
 
