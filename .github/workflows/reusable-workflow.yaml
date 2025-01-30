@@ -42,7 +42,7 @@ jobs:
         with:
           gradle-version: 8.7
       - name: Run Lint
-        if: ${{ github.event_name }} == 'pull_request'
+        if: github.event_name == 'pull_request'
         run: |
           ./gradlew libs:${{ inputs.lib }}:lint
       - uses: ruby/setup-ruby@v1
@@ -50,7 +50,7 @@ jobs:
           ruby-version: '3.2'
           bundler-cache: true
       - name: Report Static Analysis
-        if: ${{ github.event_name }} == 'pull_request'
+        if: github.event_name == 'pull_request'
         env:
           DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LIB: ${{ inputs.lib }}
@@ -68,13 +68,14 @@ jobs:
         if: success() || failure()
       - name: Run Tests
         if: success() || failure()
-        run: |
+        env:
           # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
-          DEFAULT_API_VERSION="34" 
-          FULL_API_RANGE="28 29 30 31 32 33 34 35"
-
+          DEFAULT_API_VERSION: "34" 
+          FULL_API_RANGE: "28 29 30 31 32 33 34 35"
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
           DEVICES=""
-          if [[ ${{ github.event_name == 'pull_request' }} ]]; then
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
             DEVICES="--device model=MediumPhone.arm,version=${DEFAULT_API_VERSION},locale=en,orientation=portrait "
           else
             for LEVEL in $FULL_API_RANGE
