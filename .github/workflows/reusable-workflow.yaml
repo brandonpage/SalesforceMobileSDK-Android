@@ -80,7 +80,7 @@ jobs:
           # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
           DEFAULT_API_VERSION: "34" 
           FULL_API_RANGE: "28 29 30 31 32 33 34 35"
-          IS_PR: ${{ inputs.is_pr }}
+          IS_PR: false
         run: |
           DEVICES=""
           if $IS_PR ; then
@@ -118,12 +118,14 @@ jobs:
             echo "No test results found"
             exit 1
           fi
+      - name: What's in results directory?
+        run: echo "$(ls firebase/results/)"
       - name: Test Report
         uses: dorny/test-reporter@v1
         if: success() || failure()
         with:
           name: ${{ inputs.lib }} Test Results
-          path: firebase/results/*.xml    
+          path: firebase/results/**.xml    
           reporter: java-junit
       - name: Convert Code Coverage
         if: success() || failure()
