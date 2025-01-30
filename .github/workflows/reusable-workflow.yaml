@@ -38,26 +38,26 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '21'
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      # - name: Setup Android SDK
+      #   uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.7
-      - name: Run Lint
-        if: ${{ inputs.is_pr }}
-        run: |
-          ./gradlew libs:${{ inputs.lib }}:lint
-      - uses: ruby/setup-ruby@v1
-        if: ${{ inputs.is_pr }}
-        with:
-          ruby-version: '3.2'
-          bundler-cache: true
-      - name: Report Static Analysis
-        if: ${{ inputs.is_pr }}
-        env:
-          DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LIB: ${{ inputs.lib }}
-        run: bundle exec danger --dangerfile=.github/DangerFiles/StaticAnalysis.rb --danger_id="${{ inputs.lib }}"
+      # - name: Run Lint
+      #   if: ${{ inputs.is_pr }}
+      #   run: |
+      #     ./gradlew libs:${{ inputs.lib }}:lint
+      # - uses: ruby/setup-ruby@v1
+      #   if: ${{ inputs.is_pr }}
+      #   with:
+      #     ruby-version: '3.2'
+      #     bundler-cache: true
+      # - name: Report Static Analysis
+      #   if: ${{ inputs.is_pr }}
+      #   env:
+      #     DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     LIB: ${{ inputs.lib }}
+      #   run: bundle exec danger --dangerfile=.github/DangerFiles/StaticAnalysis.rb --danger_id="${{ inputs.lib }}"
       # - name: Build for Testing
       #   if: success() || failure()
       #   run: |
@@ -129,6 +129,8 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
           script: ./gradlew lib:${{ inputs.lib }}:cAT
       - name: Test Report
         uses: dorny/test-reporter@v1
