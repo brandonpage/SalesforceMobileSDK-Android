@@ -38,8 +38,8 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '21'
-      # - name: Setup Android SDK
-      #   uses: android-actions/setup-android@v3
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.7
@@ -58,88 +58,67 @@ jobs:
       #     DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       #     LIB: ${{ inputs.lib }}
       #   run: bundle exec danger --dangerfile=.github/DangerFiles/StaticAnalysis.rb --danger_id="${{ inputs.lib }}"
-      # - name: Build for Testing
-      #   if: success() || failure()
-      #   run: |
-      #     ./gradlew libs:${{ inputs.lib }}:assembleAndroidTest
-      #     ./gradlew native:NativeSampleApps:RestExplorer:assembleDebug
-      # - uses: 'google-github-actions/auth@v2'
-      #   if: success() || failure()
-      #   with:
-      #     credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
-      # - uses: 'google-github-actions/setup-gcloud@v2'
-      #   if: success() || failure()
-      # - name: Run Tests
-      #   if: success() || failure()
-      #   env:
-      #     # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
-      #     DEFAULT_API_VERSION: "34" 
-      #     FULL_API_RANGE: "28 29 30 31 32 33 34 35"
-      #     IS_PR: ${{ inputs.is_pr }}
-      #   run: |
-      #     DEVICES=""
-      #     if [[ "$IS_PR" ]]; then
-      #       DEVICES="--device model=MediumPhone.arm,version=${DEFAULT_API_VERSION},locale=en,orientation=portrait "
-      #     else
-      #       for LEVEL in $FULL_API_RANGE
-      #       do
-      #           DEVICES+="--device model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait "
-      #       done
-      #     fi
-
-      #     COMMAND="gcloud firebase test android run "
-      #     COMMAND+="--project mobile-apps-firebase-test "
-      #     COMMAND+="--type instrumentation "
-      #     COMMAND+="--app \"native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk\" "
-      #     COMMAND+="--test=libs/${{ inputs.lib }}/build/outputs/apk/androidTest/debug/${{ inputs.lib }}-debug-androidTest.apk "
-      #     COMMAND+="${DEVICES}"
-      #     COMMAND+="--environment-variables coverage=true,coverageFile=\"/sdcard/coverage.ec\" "
-      #     COMMAND+="--directories-to-pull=/sdcard  "
-      #     COMMAND+="--results-dir=${{ inputs.lib }}-${{github.run_number}} "
-      #     COMMAND+="--results-history-name=${{ inputs.lib }} "
-      #     COMMAND+="--timeout=20m --no-auto-google-login --no-record-video --no-performance-metrics --num-flaky-test-attempts=1"
-
-      #     eval "$COMMAND"
-      # - name: Copy Test Results
-      #   if: success() || failure()
-      #   run: |
-      #     gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${{ inputs.lib }}-${{github.run_number}} > /dev/null 2>&1
-      #     if [ $? == 0 ]
-      #     then
-      #       mkdir -p firebase/results
-      #       gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${{ inputs.lib }}-${{github.run_number}} | tail -1`*" ./firebase/
-      #       mv firebase/test_result_1.xml firebase/results
-      #     else
-      #       echo "No test results found"
-      #       exit 1
-      #     fi
-      # - name: Test Report
-      #   uses: dorny/test-reporter@v1
-      #   if: success() || failure()
-      #   with:
-      #     name: ${{ inputs.lib }} Test Results
-      #     path: firebase/results/*.xml    
-      #     reporter: java-junit
-      - name: Enable KVM
+      - name: Build for Testing
+        if: success() || failure()
         run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-      - name: run tests
-        uses: reactivecircus/android-emulator-runner@v2
+          ./gradlew libs:${{ inputs.lib }}:assembleAndroidTest
+          ./gradlew native:NativeSampleApps:RestExplorer:assembleDebug
+      - uses: 'google-github-actions/auth@v2'
+        if: success() || failure()
         with:
-          api-level: 34
-          target: google_apis
-          arch: x86_64
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          disable-animations: true
-          script: ./gradlew lib:${{ inputs.lib }}:cAT
+          credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
+      - uses: 'google-github-actions/setup-gcloud@v2'
+        if: success() || failure()
+      - name: Run Tests
+        if: success() || failure()
+        env:
+          # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
+          DEFAULT_API_VERSION: "34" 
+          FULL_API_RANGE: "28 29 30 31 32 33 34 35"
+          IS_PR: ${{ inputs.is_pr }}
+        run: |
+          DEVICES=""
+          if $IS_PR ; then
+            DEVICES="--device model=MediumPhone.arm,version=${DEFAULT_API_VERSION},locale=en,orientation=portrait "
+          else
+            for LEVEL in $FULL_API_RANGE
+            do
+                DEVICES+="--device model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait "
+            done
+          fi
+
+          COMMAND="gcloud firebase test android run "
+          COMMAND+="--project mobile-apps-firebase-test "
+          COMMAND+="--type instrumentation "
+          COMMAND+="--app \"native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk\" "
+          COMMAND+="--test=libs/${{ inputs.lib }}/build/outputs/apk/androidTest/debug/${{ inputs.lib }}-debug-androidTest.apk "
+          COMMAND+="${DEVICES}"
+          COMMAND+="--environment-variables coverage=true,coverageFile=\"/sdcard/coverage.ec\" "
+          COMMAND+="--directories-to-pull=/sdcard  "
+          COMMAND+="--results-dir=${{ inputs.lib }}-${{github.run_number}} "
+          COMMAND+="--results-history-name=${{ inputs.lib }} "
+          COMMAND+="--timeout=20m --no-auto-google-login --no-record-video --no-performance-metrics --num-flaky-test-attempts=1"
+
+          eval "$COMMAND"
+      - name: Copy Test Results
+        if: success() || failure()
+        run: |
+          gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${{ inputs.lib }}-${{github.run_number}} > /dev/null 2>&1
+          if [ $? == 0 ]
+          then
+            mkdir -p firebase/results
+            gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${{ inputs.lib }}-${{github.run_number}} | tail -1`*" ./firebase/
+            mv firebase/test_result_1.xml firebase/results
+          else
+            echo "No test results found"
+            exit 1
+          fi
       - name: Test Report
         uses: dorny/test-reporter@v1
         if: success() || failure()
         with:
           name: ${{ inputs.lib }} Test Results
-          path: libs/${{ inputs.lib }}/build/outputs/androidTest-results/connected/debug/*.xml    
+          path: firebase/results/*.xml    
           reporter: java-junit
       - name: Convert Code Coverage
         if: success() || failure()
