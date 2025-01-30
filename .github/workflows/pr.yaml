@@ -57,5 +57,5 @@ jobs:
     uses: ./.github/workflows/reusable-workflow.yaml
     with:
       lib: ${{ matrix.lib }}
-      is_pr: true
+      # is_pr: true
     secrets: inherit
