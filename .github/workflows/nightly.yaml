@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  ios-pr:
+  android-nightly:
     strategy:
       fail-fast: false
       matrix:
