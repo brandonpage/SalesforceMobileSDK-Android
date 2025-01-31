@@ -83,14 +83,13 @@ jobs:
           FULL_API_RANGE: "28 35"  # Test!
           IS_PR: ${{ inputs.is_pr }}
         run: |
-          LEVELS_TO_TEST = $FULL_API_RANGE
+          LEVELS_TO_TEST=$FULL_API_RANGE
 
           if $IS_PR ; then
-            LEVELS_TO_TEST = $PR_API_VERSION
-            DEVICE="--device model=MediumPhone.arm,version=${DEFAULT_API_VERSION},locale=en,orientation=portrait "
+            LEVELS_TO_TEST=$PR_API_VERSION
           fi
 
-          mkdir -p firebase/results
+          mkdir -p firebase_results
           for LEVEL in $LEVELS_TO_TEST
             do
               gcloud firebase test android run \
@@ -101,7 +100,7 @@ jobs:
                 --device model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait \
                 --environment-variables coverage=true,coverageFile="/sdcard/coverage.ec" \
                 --directories-to-pull=/sdcard \
-                --results-dir=${{ inputs.lib }}-api-${LEVEL}-${{github.run_number}} \
+                --results-dir=${{ inputs.lib }}-api-${LEVEL}-build-${{github.run_number}} \
                 --results-history-name=${{ inputs.lib }} \
                 --timeout=20m --no-auto-google-login --no-record-video --no-performance-metrics --num-flaky-test-attempts=1
 
@@ -109,20 +108,23 @@ jobs:
               gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${{ inputs.lib }}-${{github.run_number}} > /dev/null 2>&1
               if [ $? == 0 ]
               then
-                gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${{ inputs.lib }}-api-${LEVEL}-${{github.run_number}} | tail -1`*" ./firebase/
-                mv firebase/test_result_1.xml firebase/results/api_${LEVEL}_test_result.xml
+                mkdir -p firebase_${LEVEL}
+                gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${{ inputs.lib }}-api-${LEVEL}-build-${{github.run_number}} | tail -1`*" ./firebase_${LEVEL}/
+                mv firebase_${LEVEL}/test_result_1.xml firebase_results/api_${LEVEL}_test_result.xml
               else
                 echo "No test results found"
               fi
             done
+      - name: What's in 28 directory?
+        run: echo "$(ls firebase_28/)"
       - name: What's in results directory?
-        run: echo "$(ls firebase/results/)"
+        run: echo "$(ls firebase_results/)"
       - name: Test Report
         uses: dorny/test-reporter@v1
         if: success() || failure()
         with:
           name: ${{ inputs.lib }} Test Results
-          path: firebase/results/**.xml    
+          path: firebase_results/**.xml    
           reporter: java-junit
       - name: Convert Code Coverage
         if: success() || failure()
