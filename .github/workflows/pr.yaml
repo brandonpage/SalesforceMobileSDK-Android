@@ -13,7 +13,8 @@ jobs:
         lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync, SalesforceHybrid, SalesforceReact]
     uses: ./.github/workflows/reusable-workflow.yaml
     with:
-      lib: 28
+      lib: ${{ matrix.lib }}
+      api_level: 28
     secrets: inherit
 
   android-api-29:
@@ -24,7 +25,8 @@ jobs:
         lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync, SalesforceHybrid, SalesforceReact]
     uses: ./.github/workflows/reusable-workflow.yaml
     with:
-      lib: 29
+      lib: ${{ matrix.lib }}
+      api_level: 29
     secrets: inherit
 
   android-api-30:
@@ -35,7 +37,8 @@ jobs:
         lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync, SalesforceHybrid, SalesforceReact]
     uses: ./.github/workflows/reusable-workflow.yaml
     with:
-      lib: 30
+      lib: ${{ matrix.lib }}
+      api_level: 30
     secrets: inherit
 
   android-api-31:
@@ -46,7 +49,8 @@ jobs:
         lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync, SalesforceHybrid, SalesforceReact]
     uses: ./.github/workflows/reusable-workflow.yaml
     with:
-      lib: 31
+      lib: ${{ matrix.lib }}
+      api_level: 31
     secrets: inherit
 
   android-api-32:
@@ -57,7 +61,8 @@ jobs:
         lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync, SalesforceHybrid, SalesforceReact]
     uses: ./.github/workflows/reusable-workflow.yaml
     with:
-      lib: 32
+      lib: ${{ matrix.lib }}
+      api_level: 32
     secrets: inherit
 
   android-api-33:
@@ -68,7 +73,8 @@ jobs:
         lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync, SalesforceHybrid, SalesforceReact]
     uses: ./.github/workflows/reusable-workflow.yaml
     with:
-      lib: 33
+      lib: ${{ matrix.lib }}
+      api_level: 33
     secrets: inherit
 
   android-api-34:
@@ -79,7 +85,8 @@ jobs:
         lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync, SalesforceHybrid, SalesforceReact]
     uses: ./.github/workflows/reusable-workflow.yaml
     with:
-      lib: 34
+      lib: ${{ matrix.lib }}
+      api_level: 34
     secrets: inherit
 
   android-api-35:
@@ -90,9 +97,10 @@ jobs:
         lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync, SalesforceHybrid, SalesforceReact]
     uses: ./.github/workflows/reusable-workflow.yaml
     with:
-      lib: 35
+      lib: ${{ matrix.lib }}
+      api_level: 35
     secrets: inherit
-    
+
   # test-orchestrator:
   #   runs-on: ubuntu-latest
   #   env:
