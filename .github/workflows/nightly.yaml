@@ -7,13 +7,89 @@ on:
   workflow_dispatch:
 
 jobs:
-  android-nightly:
+  android-api-28:
     strategy:
       fail-fast: false
       matrix:
         lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync, SalesforceHybrid, SalesforceReact]
-
     uses: ./.github/workflows/reusable-workflow.yaml
     with:
-      lib: ${{ matrix.lib }}
+      lib: 28
+    secrets: inherit
+
+  android-api-29:
+    needs: [android-api-28]
+    strategy:
+      fail-fast: false
+      matrix:
+        lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync, SalesforceHybrid, SalesforceReact]
+    uses: ./.github/workflows/reusable-workflow.yaml
+    with:
+      lib: 29
+    secrets: inherit
+
+  android-api-30:
+    needs: [android-api-29]
+    strategy:
+      fail-fast: false
+      matrix:
+        lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync, SalesforceHybrid, SalesforceReact]
+    uses: ./.github/workflows/reusable-workflow.yaml
+    with:
+      lib: 30
+    secrets: inherit
+
+  android-api-31:
+    needs: [android-api-30]
+    strategy:
+      fail-fast: false
+      matrix:
+        lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync, SalesforceHybrid, SalesforceReact]
+    uses: ./.github/workflows/reusable-workflow.yaml
+    with:
+      lib: 31
+    secrets: inherit
+
+  android-api-32:
+    needs: [android-api-31]
+    strategy:
+      fail-fast: false
+      matrix:
+        lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync, SalesforceHybrid, SalesforceReact]
+    uses: ./.github/workflows/reusable-workflow.yaml
+    with:
+      lib: 32
+    secrets: inherit
+
+  android-api-33:
+    needs: [android-api-32]
+    strategy:
+      fail-fast: false
+      matrix:
+        lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync, SalesforceHybrid, SalesforceReact]
+    uses: ./.github/workflows/reusable-workflow.yaml
+    with:
+      lib: 33
+    secrets: inherit
+
+  android-api-34:
+    needs: [android-api-33]
+    strategy:
+      fail-fast: false
+      matrix:
+        lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync, SalesforceHybrid, SalesforceReact]
+    uses: ./.github/workflows/reusable-workflow.yaml
+    with:
+      lib: 34
+    secrets: inherit
+
+  android-api-35:
+    needs: [android-api-34]
+    strategy:
+      fail-fast: false
+      matrix:
+        lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync, SalesforceHybrid, SalesforceReact]
+    uses: ./.github/workflows/reusable-workflow.yaml
+    with:
+      lib: 35
     secrets: inherit
