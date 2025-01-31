@@ -86,7 +86,7 @@ jobs:
                 --type instrumentation \
                 --app "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk" \
                 --test=libs/${{ inputs.lib }}/build/outputs/apk/androidTest/debug/${{ inputs.lib }}-debug-androidTest.apk \
-                --device model=$DEVICE,version=${{ inputs.api_level }},locale=en,orientation=portrait  \
+                --device model=MediumPhone.arm,version=${{ inputs.api_level }},locale=en,orientation=portrait  \
                 --environment-variables coverage=true,coverageFile="/sdcard/coverage.ec"  \
                 --directories-to-pull=/sdcard  \
                 --results-dir=${{ inputs.lib }}-${{github.run_number}}  \
@@ -105,14 +105,12 @@ jobs:
             echo "No test results found"
             exit 1
           fi
-      - name: What's in results directory?
-        run: echo "$(ls firebase/results/)"
       - name: Test Report
         uses: dorny/test-reporter@v1
         if: success() || failure()
         with:
           name: ${{ inputs.lib }} Test Results
-          path: firebase/results/**.xml    
+          path: firebase/results/*.xml    
           reporter: java-junit
       - name: Convert Code Coverage
         if: success() || failure()
