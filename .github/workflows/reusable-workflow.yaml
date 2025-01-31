@@ -89,8 +89,10 @@ jobs:
             LEVELS_TO_TEST=$PR_API_VERSION
           fi
 
-          mkdir -p firebase_results
+          mkdir firebase_results
           for LEVEL in $LEVELS_TO_TEST
+            GCLOUD_RESULTS_DIR=${{ inputs.lib }}-api-${LEVEL}-build-${{github.run_number}}
+
             do
               gcloud firebase test android run \
                 --project mobile-apps-firebase-test \
@@ -100,16 +102,15 @@ jobs:
                 --device model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait \
                 --environment-variables coverage=true,coverageFile="/sdcard/coverage.ec" \
                 --directories-to-pull=/sdcard \
-                --results-dir=${{ inputs.lib }}-api-${LEVEL}-build-${{github.run_number}} \
+                --results-dir=${GCLOUD_RESULTS_DIR} \
                 --results-history-name=${{ inputs.lib }} \
-                --timeout=20m --no-auto-google-login --no-record-video --no-performance-metrics --num-flaky-test-attempts=1
+                --timeout=20m --no-auto-google-login --no-record-video --no-performance-metrics
 
               # Copy Results
-              gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${{ inputs.lib }}-${{github.run_number}} > /dev/null 2>&1
-              if [ $? == 0 ]
-              then
-                mkdir -p firebase_${LEVEL}
-                gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${{ inputs.lib }}-api-${LEVEL}-build-${{github.run_number}} | tail -1`*" ./firebase_${LEVEL}/
+              gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${GCLOUD_RESULTS_DIR} > /dev/null 2>&1
+              if [ $? == 0 ] ; then
+                mkdir firebase_${LEVEL}
+                gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${GCLOUD_RESULTS_DIR} | tail -1`*" ./firebase_${LEVEL}/
                 mv firebase_${LEVEL}/test_result_1.xml firebase_results/api_${LEVEL}_test_result.xml
               else
                 echo "No test results found"
