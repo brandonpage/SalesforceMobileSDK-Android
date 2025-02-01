@@ -91,9 +91,9 @@ jobs:
 
           mkdir firebase_results
           for LEVEL in $LEVELS_TO_TEST
-            GCLOUD_RESULTS_DIR=${{ inputs.lib }}-api-${LEVEL}-build-${{github.run_number}}
-
             do
+              GCLOUD_RESULTS_DIR=${{ inputs.lib }}-api-${LEVEL}-build-${{github.run_number}}
+
               gcloud firebase test android run \
                 --project mobile-apps-firebase-test \
                 --type instrumentation \
