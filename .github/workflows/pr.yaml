@@ -60,7 +60,7 @@ jobs:
     #   is_pr: true
     # secrets: inherit
 
-  test-android-nightly:
+  test-android:
     strategy:
       fail-fast: false
       matrix:
@@ -68,4 +68,5 @@ jobs:
     uses: ./.github/workflows/reusable-workflow.yaml
     with:
       lib: ${{ matrix.lib }}
+      is_pr: true
     secrets: inherit
