@@ -105,7 +105,7 @@ jobs:
                 --directories-to-pull=/sdcard \
                 --results-dir=${GCLOUD_RESULTS_DIR} \
                 --results-history-name=${{ inputs.lib }} \
-                --timeout=20m --no-auto-google-login --no-record-video --no-performance-metrics
+                --timeout=20m --no-auto-google-login --no-record-video --no-performance-metrics || true
             done
       - name: Copy Test Results
         continue-on-error: true
