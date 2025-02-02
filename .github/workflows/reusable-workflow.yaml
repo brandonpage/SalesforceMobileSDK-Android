@@ -149,14 +149,16 @@ jobs:
           flaky_summary: true
           fail_on_failure: true
           detailed_summary: true
+          group_suite: true
           report_paths: 'firebase_results/**.xml'
       - name: Convert Code Coverage
         if: success() || failure()
         run: |
           ./gradlew libs:${{ inputs.lib }}:convertCodeCoverage
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v5
         if: success() || failure()
         with:
+          files: libs/${{ inputs.lib }}/build/reports/jacoco/convertedCodeCoverage/convertedCodeCoverage.xml
           flags: ${{ inputs.lib }}
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
