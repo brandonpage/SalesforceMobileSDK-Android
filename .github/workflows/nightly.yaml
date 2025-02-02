@@ -6,13 +6,37 @@ on:
   # This lets us trigger the workflow from a browser.
   workflow_dispatch:
 
+# Run the core libraries (including MobileSync) first so the MobileSync tests 
+# in the Hybrid and React libraries don't run simultaniously.  This prevents flappers
+# and the possibity of the test credentials to be invalidated.
 jobs:
-  android-nightly:
+  android-nightly-core:
     strategy:
       fail-fast: false
       matrix:
-        lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync, SalesforceHybrid, SalesforceReact]
+        lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync]
     uses: ./.github/workflows/reusable-workflow.yaml
     with:
       lib: ${{ matrix.lib }}
     secrets: inherit
+  android-nightly-Hybrid:
+    needs: [android-nightly-core]
+    strategy:
+      fail-fast: false
+      matrix:
+        lib: [SalesforceHybrid]
+    uses: ./.github/workflows/reusable-workflow.yaml
+    with:
+      lib: ${{ matrix.lib }}
+    secrets: inherit
+  android-nightly-React:
+    needs: [android-nightly-Hybrid]
+    strategy:
+      fail-fast: false
+      matrix:
+        lib: [SalesforceReact]
+    uses: ./.github/workflows/reusable-workflow.yaml
+    with:
+      lib: ${{ matrix.lib }}
+    secrets: inherit
+  

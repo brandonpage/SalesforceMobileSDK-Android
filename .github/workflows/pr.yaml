@@ -60,13 +60,33 @@ jobs:
     #   is_pr: true
     # secrets: inherit
 
-  test-android:
+  android-nightly-core:
     strategy:
       fail-fast: false
       matrix:
-        lib: [SalesforceAnalytics, SalesforceSDK]
+        lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync]
     uses: ./.github/workflows/reusable-workflow.yaml
     with:
       lib: ${{ matrix.lib }}
-      is_pr: true
     secrets: inherit
+  android-nightly-Hybrid:
+    needs: [android-nightly-core]
+    strategy:
+      fail-fast: false
+      matrix:
+        lib: [SalesforceHybrid]
+    uses: ./.github/workflows/reusable-workflow.yaml
+    with:
+      lib: ${{ matrix.lib }}
+    secrets: inherit
+  android-nightly-React:
+    needs: [android-nightly-Hybrid]
+    strategy:
+      fail-fast: false
+      matrix:
+        lib: [SalesforceReact]
+    uses: ./.github/workflows/reusable-workflow.yaml
+    with:
+      lib: ${{ matrix.lib }}
+    secrets: inherit
+    
