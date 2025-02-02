@@ -80,8 +80,7 @@ jobs:
         env:
           # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
           PR_API_VERSION: "34" 
-          # FULL_API_RANGE: "28 29 30 31 32 33 34 35"
-          FULL_API_RANGE: "28 35"  # Test!
+          FULL_API_RANGE: "28 29 30 31 32 33 34 35"
           IS_PR: ${{ inputs.is_pr }}
         run: |
           LEVELS_TO_TEST=$FULL_API_RANGE
@@ -114,7 +113,6 @@ jobs:
           # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
           PR_API_VERSION: "34" 
           FULL_API_RANGE: "28 29 30 31 32 33 34 35"
-          # FULL_API_RANGE: "28 29 31"  # Test!
           IS_PR: ${{ inputs.is_pr }}
         run: |
           LEVELS_TO_TEST=$FULL_API_RANGE
@@ -132,11 +130,6 @@ jobs:
                 mkdir firebase_${LEVEL}
                 gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${GCLOUD_RESULTS_DIR} | tail -1`*" ./firebase_${LEVEL}/
                 mv firebase_${LEVEL}/test_result_1.xml firebase_results/api_${LEVEL}_test_result.xml
-              else
-                if $IS_PR ; then
-                  echo "No test results found"
-                  exit 1
-                fi
               fi
             done
       - name: What's in 28 directory?
@@ -154,6 +147,8 @@ jobs:
           require_tests: true
           check_retries: true
           flaky_summary: true
+          fail_on_failure: true
+          detailed_summary: true
           report_paths: 'firebase_results/**.xml'
       - name: Convert Code Coverage
         if: success() || failure()
