@@ -149,7 +149,7 @@ jobs:
           flaky_summary: true
           fail_on_failure: true
           detailed_summary: true
-          group_suite: true
+          # group_suite: true
           report_paths: 'firebase_results/**.xml'
       - name: Convert Code Coverage
         if: success() || failure()

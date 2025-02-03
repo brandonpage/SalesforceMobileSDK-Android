@@ -20,6 +20,7 @@ jobs:
       lib: ${{ matrix.lib }}
     secrets: inherit
   android-nightly-Hybrid:
+    if: success() || failure()
     needs: [android-nightly-core]
     strategy:
       fail-fast: false
@@ -30,6 +31,7 @@ jobs:
       lib: ${{ matrix.lib }}
     secrets: inherit
   android-nightly-React:
+    if: success() || failure()
     needs: [android-nightly-Hybrid]
     strategy:
       fail-fast: false
