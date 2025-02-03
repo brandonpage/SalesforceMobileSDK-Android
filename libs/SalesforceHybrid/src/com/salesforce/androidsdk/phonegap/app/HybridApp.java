@@ -32,7 +32,6 @@ import android.app.Application;
  * Application class used by hybrid applications.
  */
 public class HybridApp extends Application {
-
 	@Override
 	public void onCreate() {
 		super.onCreate();

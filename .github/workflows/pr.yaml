@@ -1,7 +1,7 @@
 name: Pull Request
 
 on:
-  # Dangerious without Member Check setup!
+  # Dangerious without Member Check setup! 
   pull_request_target:
     branches: [github-actions, dev]
 

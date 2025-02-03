@@ -57,7 +57,6 @@ import java.util.Map;
  * @author bhariharan
  */
 public class UserAccount {
-
 	public static final String AUTH_TOKEN = "authToken";
 	public static final String REFRESH_TOKEN = "refreshToken";
 	public static final String LOGIN_SERVER = "loginServer";

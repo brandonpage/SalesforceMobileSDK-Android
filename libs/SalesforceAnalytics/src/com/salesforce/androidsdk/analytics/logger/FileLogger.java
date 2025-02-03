@@ -45,7 +45,6 @@ import java.util.List;
  * @author bhariharan
  */
 public class FileLogger {
-
     private static final String LOG_SUFFIX = "_log";
     private static final String FILE_LOGGER_PREFS = "sf_file_logger_prefs";
     private static final String TAG = "FileLogger";
