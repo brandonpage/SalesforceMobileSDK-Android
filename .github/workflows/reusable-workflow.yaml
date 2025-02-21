@@ -150,6 +150,7 @@ jobs:
           flaky_summary: true
           fail_on_failure: true
           detailed_summary: true
+          group_reports: false
           report_paths: 'firebase_results/**.xml'
       # Use this reporter for Nightly tests because it displays results per API level.
       # - name: Test Report
