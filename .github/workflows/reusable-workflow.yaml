@@ -140,8 +140,8 @@ jobs:
             mv firebase_${PR_API_VERSION} firebase
       # Use this reporter for PRs because it correctly displays flapping/retried tests.
       - name: Test Report
-        uses: mikepenz/action-junit-report@v5
-        if: ${{ inputs.is_pr }}
+        uses: mikepenz/action-junit-report@v5.4.0-b01
+        # if: ${{ inputs.is_pr }}
         with:
           check_name: ${{ inputs.lib }} Test Results
           job_name: ${{ inputs.lib }} Test Results
@@ -152,13 +152,13 @@ jobs:
           detailed_summary: true
           report_paths: 'firebase_results/**.xml'
       # Use this reporter for Nightly tests because it displays results per API level.
-      - name: Test Report
-        uses: dorny/test-reporter@v1
-        if: ${{ ! inputs.is_pr }}
-        with:
-          name: ${{ inputs.lib }} Test Results
-          path: firebase_results/**.xml
-          reporter: java-junit
+      # - name: Test Report
+      #   uses: dorny/test-reporter@v1
+      #   if: ${{ ! inputs.is_pr }}
+      #   with:
+      #     name: ${{ inputs.lib }} Test Results
+      #     path: firebase_results/**.xml
+      #     reporter: java-junit
       - name: Convert Code Coverage
         if: success() || failure()
         run: |
