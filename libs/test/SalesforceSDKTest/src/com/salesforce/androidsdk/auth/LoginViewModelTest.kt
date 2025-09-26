@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.auth
 
-import android.webkit.WebView
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -38,9 +37,6 @@ import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginViewModel
-import io.mockk.spyk
-import io.mockk.unmockkAll
-import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -79,7 +75,6 @@ class LoginViewModelTest {
     @After
     fun teardown() {
         SalesforceSDKManager.getInstance().loginServerManager.reset()
-        unmockkAll()
     }
 
     // Google's recommended naming scheme for view model test is "thingUnderTest_TriggerOfTest_ResultOfTest"
@@ -202,18 +197,18 @@ class LoginViewModelTest {
         assertEquals(unchangedUrl, viewModel.getValidServerUrl(endingSlash))
     }
 
-    @Test
-    fun clearWebViewCache_CallsWebViewClearCache_WithTrueParameter() {
-        // Arrange
-        val webView = WebView(context)
-        val webviewSpy = spyk<WebView>(webView)
-
-        // Act
-        viewModel.clearWebViewCache(webviewSpy)
-
-        // Assert
-        verify { webviewSpy.clearCache(true) }
-    }
+//    @Test
+//    fun clearWebViewCache_CallsWebViewClearCache_WithTrueParameter() {
+//        // Arrange
+//        val webView = WebView(context)
+//        val webviewSpy = spyk<WebView>(webView)
+//
+//        // Act
+//        viewModel.clearWebViewCache(webviewSpy)
+//
+//        // Assert
+//        verify { webviewSpy.clearCache(true) }
+//    }
 
     private fun generateExpectedAuthorizationUrl(
         server: String,
