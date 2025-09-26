@@ -3,7 +3,7 @@ name: Pull Request
 on:
   # Dangerious without Member Check setup!
   pull_request_target:
-    branches: [dev, master]
+    branches: [dev, master, fix-login-activity-test-TEST_BRANCH]
 
 jobs:
   test-orchestrator:
