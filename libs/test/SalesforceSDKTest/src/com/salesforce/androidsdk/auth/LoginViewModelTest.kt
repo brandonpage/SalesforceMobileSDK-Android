@@ -39,6 +39,7 @@ import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginViewModel
 import io.mockk.spyk
+import io.mockk.unmockkAll
 import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -78,6 +79,7 @@ class LoginViewModelTest {
     @After
     fun teardown() {
         SalesforceSDKManager.getInstance().loginServerManager.reset()
+        unmockkAll()
     }
 
     // Google's recommended naming scheme for view model test is "thingUnderTest_TriggerOfTest_ResultOfTest"
