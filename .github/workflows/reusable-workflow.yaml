@@ -202,7 +202,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
-          name: test-results
+          name: test-results-${{ inputs.lib }}
           path: 'firebase_results/**.xml'
       - name: Convert Code Coverage
         if: success() || failure()
