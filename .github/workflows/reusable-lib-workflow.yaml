@@ -190,9 +190,16 @@ jobs:
             r = t.getroot()
             return r if r.tag == 'testsuite' else r.find('testsuite')
           os_el, rs_el = suite(orig), suite(rerun)
+          failed_keys = set()
+          for tc in os_el.findall('testcase'):
+            if tc.find('failure') is not None or tc.find('error') is not None:
+              failed_keys.add(f"{tc.get('name','')}|{tc.get('classname','')}|{tc.get('file','')}")
+          added = 0
           for tc in rs_el.findall('testcase'):
-            os_el.append(tc)
-          os_el.set('tests', str(int(os_el.get('tests','0')) + int(rs_el.get('tests','0'))))
+            if f"{tc.get('name','')}|{tc.get('classname','')}|{tc.get('file','')}" in failed_keys:
+              os_el.append(tc)
+              added += 1
+          os_el.set('tests', str(int(os_el.get('tests','0')) + added))
           with open(sys.argv[3], 'w') as f:
             f.write(ET.tostring(orig.getroot(), encoding='unicode'))
           PYEOF
