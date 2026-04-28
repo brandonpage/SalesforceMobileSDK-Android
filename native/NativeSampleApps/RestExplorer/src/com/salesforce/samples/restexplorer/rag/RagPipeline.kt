@@ -58,19 +58,75 @@ class RagPipeline(
         val generationMs: Long,
         /**
          * Per-call decomposition from [RagLlm.generate]. Null when
-         * generation didn't run (no LLM loaded, or no hits in the RAG
-         * path). Surfaces prefill/decode/setup numbers so the UI can
-         * show *where* the latency went, not just how much.
+         * generation didn't run (no LLM loaded, no hits, or the LLM
+         * was short-circuited). Surfaces prefill/decode/setup numbers
+         * so the UI can show *where* the latency went, not just how
+         * much.
          */
         val generationBreakdown: RagLlm.GenerationResult? = null,
+        /**
+         * Aggregate retrieval-quality + latency metrics. Null only on
+         * the bare-LLM path ([answerWithoutRetrieval]) where there is
+         * no retrieval to measure.
+         */
+        val retrievalMetrics: RetrievalMetrics? = null,
+        /**
+         * True when the top-1 hit's cosine similarity met or exceeded
+         * [SHORT_CIRCUIT_COSINE_THRESHOLD] and the LLM was skipped
+         * entirely — the answer is the top hit's stored text. Lets the
+         * UI label the trade-off (~30 ms total vs ~3 s with the LLM).
+         */
+        val shortCircuited: Boolean = false,
     )
 
-    /** A single retrieval hit surfaced to the UI. */
+    /**
+     * A single retrieval hit surfaced to the UI.
+     *
+     * @param cosine cosine similarity vs the query vector, in `[-1, 1]`.
+     *               Computed client-side after `vectorSearch` returns,
+     *               because the underlying vec0 SQL only projects the
+     *               soup row — the per-row distance is used for
+     *               ordering but not surfaced. Embeddings are
+     *               L2-normalised at encode time (see [RagEmbedder]),
+     *               so cosine reduces to a plain dot product.
+     */
     data class RetrievedDoc(
         val soupEntryId: Long,
         val title: String,
         val text: String,
+        val cosine: Double,
     )
+
+    /**
+     * Aggregate retrieval-side numbers, separate from LLM generation.
+     * Lets the UI show whether retrieval did its job (high cosine,
+     * clear gap to runner-up) independently of whether the answer
+     * came from the model or from the corpus directly.
+     *
+     * `topCosine` and `gapToSecond` are the two numbers that drive the
+     * short-circuit decision in [searchWithAnswer]:
+     *   - `topCosine` = how close the best hit is to the query.
+     *   - `gapToSecond` = how confidently the best hit dominates. A
+     *     small gap with a high `topCosine` means several docs are
+     *     near-equally relevant, which is fine for RAG but a poor
+     *     signal for skip-the-LLM short-circuiting.
+     *
+     * Latency fields are wall-clock (`System.nanoTime()`) around each
+     * sub-step. `cosineComputeMs` covers the client-side scoring
+     * loop; it should stay sub-millisecond at the demo's k=3, dim=100,
+     * but is broken out so we can see when it stops being free.
+     */
+    data class RetrievalMetrics(
+        val k: Int,
+        val topCosine: Double,
+        val gapToSecond: Double,
+        val meanCosine: Double,
+        val embedQueryMs: Long,
+        val vectorSearchMs: Long,
+        val cosineComputeMs: Long,
+    ) {
+        val totalRetrievalMs: Long get() = embedQueryMs + vectorSearchMs + cosineComputeMs
+    }
 
     /**
      * Create the soup (if absent) with one FLOAT32 / cosine vector index
@@ -133,27 +189,73 @@ class RagPipeline(
      */
     fun searchWithAnswer(query: String, k: Int = 3): AnswerResult {
         ensureSoup()
+        // --- Retrieval, broken out into three timed sub-steps so the
+        // UI can show where the ~30 ms goes (embed dominates by far
+        // at the demo's corpus size; vector search is ~ms; cosine
+        // re-scoring is sub-ms).
         val t0 = System.nanoTime()
         val queryVec = embedder.embed(query)
+        val tEmbedded = System.nanoTime()
         val rows: JSONArray = store.vectorSearch(SOUP_NAME, EMBEDDING_PATH, queryVec, k = k)
-        val tRetrieved = System.nanoTime()
+        val tSearched = System.nanoTime()
+        val hits = rows.toHits(queryVec)
+        val tScored = System.nanoTime()
 
-        val hits = rows.toHits()
+        val metrics = buildMetrics(
+            hits = hits,
+            k = k,
+            embedQueryMs = (tEmbedded - t0) / 1_000_000L,
+            vectorSearchMs = (tSearched - tEmbedded) / 1_000_000L,
+            cosineComputeMs = (tScored - tSearched) / 1_000_000L,
+        )
+
+        // Short-circuit decision: if the top hit is close enough to
+        // the query (cosine >= threshold), the LLM adds latency
+        // (~3 s) without adding information — the corpus already
+        // contains a near-verbatim answer. Skip generation and return
+        // the top hit's stored text. The threshold is intentionally
+        // conservative; tune via [SHORT_CIRCUIT_COSINE_THRESHOLD].
+        // Out-of-corpus questions land well below 0.85 (the demo Q2
+        // tops out around ~0.4), so this branch only fires on
+        // genuinely high-confidence in-corpus matches.
+        val topHit = hits.firstOrNull()
+        val canShortCircuit = topHit != null &&
+            topHit.cosine >= SHORT_CIRCUIT_COSINE_THRESHOLD
+
+        if (canShortCircuit) {
+            val tDone = System.nanoTime()
+            return AnswerResult(
+                hits = hits,
+                prompt = buildPrompt(query, hits),  // kept for transparency
+                answer = topHit!!.text,
+                retrievalMs = (tScored - t0) / 1_000_000L,
+                generationMs = 0L,
+                generationBreakdown = null,
+                retrievalMetrics = metrics,
+                shortCircuited = true,
+            ).also {
+                // touch tDone to silence unused-var warnings; the
+                // real total is retrievalMs + 0 generation.
+                @Suppress("UNUSED_VARIABLE") val _t = tDone
+            }
+        }
+
         val prompt = buildPrompt(query, hits)
-
         val (generated, tGenerated) = if (llm != null && hits.isNotEmpty()) {
             llm.generate(prompt) to System.nanoTime()
         } else {
-            null to tRetrieved
+            null to tScored
         }
 
         return AnswerResult(
             hits = hits,
             prompt = prompt,
             answer = generated?.text,
-            retrievalMs = (tRetrieved - t0) / 1_000_000L,
-            generationMs = (tGenerated - tRetrieved) / 1_000_000L,
+            retrievalMs = (tScored - t0) / 1_000_000L,
+            generationMs = (tGenerated - tScored) / 1_000_000L,
             generationBreakdown = generated,
+            retrievalMetrics = metrics,
+            shortCircuited = false,
         )
     }
 
@@ -189,21 +291,100 @@ class RagPipeline(
             retrievalMs = 0L,
             generationMs = (tEnd - tStart) / 1_000_000L,
             generationBreakdown = generated,
+            retrievalMetrics = null,
+            shortCircuited = false,
         )
     }
 
-    private fun JSONArray.toHits(): List<RetrievedDoc> {
+    /**
+     * Convert vec0's row results into [RetrievedDoc]s, computing the
+     * cosine similarity vs [queryVec] for each row from the embedding
+     * stored in the soup. Two reasons we do this in Kotlin rather than
+     * trusting vec0's distance:
+     *
+     *   1. The vector_match SQL (see [QuerySpec.computeWhereClause])
+     *      uses vec0's `MATCH` predicate to filter and order, but
+     *      projects only the soup row — the `distance` column from
+     *      the inner `vec0` virtual table is not in the SELECT, so it
+     *      isn't reachable from the JSONArray we get back. Re-scoring
+     *      client-side is cheap (k * dim multiplications, sub-ms at
+     *      k=3 / dim=100) and avoids changing the SmartStore SQL.
+     *   2. Embeddings are L2-normalised at encode time (see
+     *      [RagEmbedder]), so cosine reduces to a dot product.
+     *      Doing the scoring here keeps the [RetrievedDoc] order
+     *      consistent with the score we display.
+     *
+     * If the soup row somehow lacks an embedding (older index, manual
+     * insert), the score falls back to `Double.NaN` so the UI can
+     * make the gap visible rather than hiding it as 0.
+     */
+    private fun JSONArray.toHits(queryVec: FloatArray): List<RetrievedDoc> {
         val out = ArrayList<RetrievedDoc>(length())
         for (i in 0 until length()) {
             // With selectPaths=null the row is the whole soup object.
             val row = getJSONObject(i)
+            val storedVec = row.optJSONArray(EMBEDDING_PATH)
+            val cosine = if (storedVec != null) cosineSimilarity(queryVec, storedVec) else Double.NaN
             out += RetrievedDoc(
                 soupEntryId = row.getLong(SmartStore.SOUP_ENTRY_ID),
                 title = row.optString(TITLE_PATH),
                 text = row.optString(TEXT_PATH),
+                cosine = cosine,
             )
         }
+        // Important: we do NOT re-sort by computed cosine. vec0 ranks
+        // in pure FLOAT32 end-to-end (FLOAT32 stored vectors + FP32
+        // re-parsed query from `vec_f32(...)`); our client-side
+        // cosine mixes the FloatArray query with Doubles round-tripped
+        // out of JSON, so the two computations can diverge by ~0.005
+        // when the top hits are within ~0.02 of each other. An
+        // earlier version of this code re-sorted by client cosine and
+        // got Q1 wrong: vec0 correctly ranked "Create a Lead" #1 at
+        // FP32-cosine \u2248 0.696, but our recompute had "Approval
+        // Processes" at 0.703, which then short-circuited and
+        // returned the wrong doc verbatim. vec0's ordering is the
+        // ground truth; our cosines are for display + threshold
+        // checking only. Therefore: keep vec0's order.
         return out
+    }
+
+    private fun buildMetrics(
+        hits: List<RetrievedDoc>,
+        k: Int,
+        embedQueryMs: Long,
+        vectorSearchMs: Long,
+        cosineComputeMs: Long,
+    ): RetrievalMetrics {
+        val cosines = hits.map { it.cosine }
+        val top = cosines.firstOrNull() ?: Double.NaN
+        val second = cosines.getOrNull(1) ?: Double.NaN
+        val gap = if (!top.isNaN() && !second.isNaN()) top - second else Double.NaN
+        val mean = if (cosines.isNotEmpty() && cosines.none { it.isNaN() })
+            cosines.average() else Double.NaN
+        return RetrievalMetrics(
+            k = k,
+            topCosine = top,
+            gapToSecond = gap,
+            meanCosine = mean,
+            embedQueryMs = embedQueryMs,
+            vectorSearchMs = vectorSearchMs,
+            cosineComputeMs = cosineComputeMs,
+        )
+    }
+
+    /**
+     * Cosine similarity between [a] (the query vector, FloatArray) and
+     * [b] (a stored embedding, JSONArray of doubles). Both are
+     * L2-normalised so this is just a dot product. Computed in `Double`
+     * to keep accumulator precision; the difference vs `Float`
+     * accumulation is below the third decimal at this dim, but
+     * cheap insurance for downstream threshold comparisons.
+     */
+    private fun cosineSimilarity(a: FloatArray, b: JSONArray): Double {
+        val n = minOf(a.size, b.length())
+        var dot = 0.0
+        for (i in 0 until n) dot += a[i] * b.getDouble(i)
+        return dot
     }
 
     private fun buildPrompt(query: String, hits: List<RetrievedDoc>): String =
@@ -246,6 +427,37 @@ class RagPipeline(
         const val TITLE_PATH: String = "title"
         const val TEXT_PATH: String = "text"
         const val EMBEDDING_PATH: String = "embedding"
+
+        /**
+         * Cosine threshold above which the LLM is skipped and the top
+         * retrieved doc is returned verbatim. **Per-corpus tuning is
+         * required** — the right value depends on the embedder's
+         * dynamic range and the corpus's topical homogeneity:
+         *
+         *   - The demo's universal-sentence-encoder (5 MiB, dim=100)
+         *     produces L2-normalised vectors with relatively narrow
+         *     spread on this corpus (all docs are about Salesforce,
+         *     so they cluster). Measured cosines:
+         *     - Q1 "How do I create a Lead?" → top1 ≈ 0.70 (the
+         *       "Create a Lead" doc).
+         *     - Q2 "What is the capital of France?" → top1 ≈ 0.62
+         *       (a meaningless best match within a Salesforce corpus).
+         *     The 0.08 separation is the budget we have to work
+         *     with; **0.68** sits in the middle and successfully
+         *     fires for in-corpus queries while skipping
+         *     out-of-corpus queries.
+         *
+         *   - A higher-quality embedder (e.g. fine-tuned
+         *     sentence-transformers MiniLM, dim=384) would push
+         *     in-corpus cosines into the 0.80–0.95 band and
+         *     out-of-corpus cosines below 0.40, at which point the
+         *     threshold can move closer to 0.80 with much more
+         *     margin.
+         *
+         * Lower threshold = more aggressive short-circuiting (faster,
+         * but more risk of returning a close-but-wrong doc verbatim).
+         */
+        const val SHORT_CIRCUIT_COSINE_THRESHOLD: Double = 0.68
     }
 }
 

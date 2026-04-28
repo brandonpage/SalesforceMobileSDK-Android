@@ -199,17 +199,31 @@ class RagActivity : Activity() {
             if (r.hits.isEmpty()) {
                 append("No retrieval (bare LLM call).\n\n")
             } else {
-                append("Top-").append(r.hits.size).append(" hits (")
-                    .append(r.retrievalMs).append(" ms):\n")
-                r.hits.forEachIndexed { i, hit ->
-                    append("  ").append(i + 1).append(". ")
-                        .append(hit.title)
-                        .append("  [id=").append(hit.soupEntryId).append("]\n")
-                }
-                append('\n')
+                append(formatRetrieval(r))
+            }
+            if (r.shortCircuited) {
+                append(
+                    String.format(
+                        "[short-circuit fired: top1=%.3f \u2265 threshold=%.3f \u2014 skipping LLM]%n",
+                        r.retrievalMetrics?.topCosine ?: Double.NaN,
+                        RagPipeline.SHORT_CIRCUIT_COSINE_THRESHOLD,
+                    )
+                )
+            } else if (r.retrievalMetrics != null) {
+                append(
+                    String.format(
+                        "[no short-circuit: top1=%.3f < threshold=%.3f \u2014 running LLM]%n",
+                        r.retrievalMetrics.topCosine,
+                        RagPipeline.SHORT_CIRCUIT_COSINE_THRESHOLD,
+                    )
+                )
             }
             if (r.answer != null) {
-                append("Answer (").append(r.generationMs).append(" ms):\n")
+                if (r.shortCircuited) {
+                    append("Answer (0 ms generation \u2014 corpus verbatim):\n")
+                } else {
+                    append("Answer (").append(r.generationMs).append(" ms):\n")
+                }
                 append(r.answer).append('\n')
                 r.generationBreakdown?.let { gb ->
                     append("\nLatency breakdown:\n")
@@ -223,6 +237,49 @@ class RagActivity : Activity() {
             append("\n---\nPrompt sent to LLM (first 800 chars):\n")
             append(r.prompt.take(800))
             if (r.prompt.length > 800) append("\n… (").append(r.prompt.length - 800).append(" more chars truncated)")
+        }
+
+    /**
+     * Render the retrieval header: aggregate timings, top-1 / gap /
+     * mean cosines, and per-hit `cos=… title [id]` rows.
+     *
+     * Per-hit cosine comes from [RagPipeline.RetrievedDoc.cosine] which
+     * the pipeline computes client-side after `vectorSearch` returns
+     * (vec0 only orders by distance, doesn't surface it through the
+     * row JSON \u2014 see `RagPipeline.toHits`). The aggregate stats are
+     * useful even when the LLM still runs: they show whether retrieval
+     * "did its job", separately from generation quality.
+     */
+    private fun formatRetrieval(r: RagPipeline.AnswerResult): String =
+        buildString {
+            val m = r.retrievalMetrics
+            if (m != null) {
+                append(
+                    String.format(
+                        "Retrieval (%d ms total: embed=%d + search=%d + score=%d):%n",
+                        r.retrievalMs, m.embedQueryMs, m.vectorSearchMs, m.cosineComputeMs,
+                    )
+                )
+                append(
+                    String.format(
+                        "  k=%d, top1=%.3f, gap=%.3f, mean=%.3f%n",
+                        m.k, m.topCosine, m.gapToSecond, m.meanCosine,
+                    )
+                )
+            } else {
+                // Pre-instrumentation fallback; shouldn't fire on the RAG path.
+                append("Top-").append(r.hits.size).append(" hits (")
+                    .append(r.retrievalMs).append(" ms):\n")
+            }
+            r.hits.forEachIndexed { i, hit ->
+                append(
+                    String.format(
+                        "  %d. cos=%.3f  %s  [id=%d]%n",
+                        i + 1, hit.cosine, hit.title, hit.soupEntryId,
+                    )
+                )
+            }
+            append('\n')
         }
 
     /**

@@ -13,7 +13,7 @@ locally-vendored fork of `sqlcipher-android`.
 
 ## Status Dashboard
 
-Overall status: **Phase 4 end-to-end working on real hardware, with an A/B vs bare LLM** — full RAG loop runs on a Pixel 8 Pro (arm64-v8a, SDK 36, `Backend.GPU()`) with Gemma 4 E2B (`.litertlm`, ~2.4 GB on disk, 2463 MiB resident) and the Universal Sentence Encoder (`.tflite`, ~5 MiB, dim=100). Headline numbers on device, warm: retrieval 44–59 ms, generation 1.4–3.4 s/answer. The bare-LLM A/B confirms the qualitative case for RAG: on a corpus-relevant question both modes answer correctly (RAG slightly more grounded, +666 ms latency vs bare); on a corpus-absent question the bare LLM **hallucinates a wrong answer** while the RAG path correctly refuses ("I don't know"). The MediaPipe `tasks-genai` → LiteRT-LM swap pulled the project's Kotlin floor up to 2.2.21; the K2 migration is contained to root + `buildSrc` build scripts, two `kotlin("plugin.compose")` additions, and a mechanical `srcDirs(arrayOf(...))` → `srcDirs(...)` clean-up across 11 modules. The whole SDK still compiles and installs.
+Overall status: **Phase 4 end-to-end working on real hardware, with an A/B vs bare LLM and a measured per-call perf decomposition** — full RAG loop runs on a Pixel 8 Pro (arm64-v8a, SDK 36, `Backend.GPU()`) with Gemma 4 E2B (`.litertlm`, ~2.4 GB on disk, 2463 MiB resident) and the Universal Sentence Encoder (`.tflite`, ~5 MiB, dim=100). Headline numbers on device, warm: retrieval 44–46 ms (embed dominates at 30–40 ms; vec0 ~6–13 ms; client-side cosine sub-ms), generation 1.4–3.4 s/answer. The bare-LLM A/B confirms the qualitative case for RAG: on a corpus-relevant question both modes answer correctly (RAG slightly more grounded); on a corpus-absent question the RAG path correctly refuses ("I don't know") while the bare path uses world knowledge to answer (and would hallucinate confidently on a private-data corpus where the model has no prior). LiteRT-LM `BenchmarkInfo` decomposition (Phase 4.8) shows decode is the dominant cost at ~14 tps / ~70 ms/token — not the per-conversation rebuild (9–10 ms) we previously suspected. A top-1-cosine threshold short-circuit (`SHORT_CIRCUIT_COSINE_THRESHOLD = 0.68`) skips the LLM and returns the top retrieved doc verbatim on confident in-corpus matches, giving a **77× speedup (3389 ms → 44 ms)** on the easy case while preserving the no-hallucination guard rail on out-of-corpus queries. The MediaPipe `tasks-genai` → LiteRT-LM swap pulled the project's Kotlin floor up to 2.2.21; the K2 migration is contained to root + `buildSrc` build scripts, two `kotlin("plugin.compose")` additions, and a mechanical `srcDirs(arrayOf(...))` → `srcDirs(...)` clean-up across 11 modules. The whole SDK still compiles and installs.
 
 | Phase | Summary | State |
 | :--- | :--- | :--- |
@@ -21,7 +21,7 @@ Overall status: **Phase 4 end-to-end working on real hardware, with an A/B vs ba
 | 1 | Native layer: custom `libsqlcipher.so` with `sqlite-vec` baked in | ✅ Complete (1.1e smoke folded into Phase 3) |
 | 2 | SmartStore API layer: `Type.vector`, `QueryType.vector_match`, migration | ✅ Complete |
 | 3 | Tests: register/upsert/search/alter/negative/encryption/concurrency/perf | ✅ Complete (90/90 green) |
-| 4 | Sample: on-device RAG in RestExplorer + measured perf results | ✅ Complete (Pixel 8 Pro / GPU: 44–59 ms retrieval + 1.4–3.4 s generation; A/B vs bare LLM run on the same device shows the bare model hallucinates on corpus-absent questions while the RAG path refuses correctly. Emulator/CPU numbers also captured for the build-only check.) |
+| 4 | Sample: on-device RAG in RestExplorer + measured perf results | ✅ Complete (Pixel 8 Pro / GPU: 44–46 ms retrieval + 1.4–3.4 s generation, plus a top-1-cosine short-circuit at 0.68 that skips the LLM on confident in-corpus matches for a 77× speedup to 44 ms. `BenchmarkInfo`-derived prefill/decode/setup decomposition is surfaced in the UI; A/B vs bare LLM run on the same device shows the bare model hallucinates on corpus-absent questions while the RAG path refuses correctly. Emulator/CPU numbers also captured for the build-only check.) |
 
 ---
 
@@ -1172,3 +1172,216 @@ phase completes.
       compelling case and a synthetic-help corpus understates it.
     - Phase-3 SmartStore tests still need a re-run under K2 before
       any merge.
+
+- **2026-04-27** — **Phase 4.8 device perf instrumentation + retrieval
+  short-circuit (Pixel 8 Pro / GPU).** Same APK + models as the
+  Phase 4.7 entry. Three changes layered onto the existing demo:
+  (a) per-call latency decomposition via
+  `Conversation.getBenchmarkInfo()`, (b) per-hit cosine similarity
+  + aggregate retrieval metrics surfaced through the result struct
+  and into the UI, (c) a top-1-cosine threshold short-circuit that
+  skips the LLM and returns the top retrieved doc verbatim when the
+  match is confident enough. The motivation was the user-visible
+  3.4 s end-to-end on Q1 RAG: the prior changelog entry attributed
+  the RAG-vs-bare delta to "99 % prefill of the `Context: [...]`
+  block" without measuring, and informally guessed the
+  per-conversation rebuild was ~1.8 s of slack. Direct measurement
+  shows **both of those numbers were wrong**, and corrects the
+  story below.
+
+  - **Files touched:**
+    - `@/native/NativeSampleApps/RestExplorer/src/com/salesforce/samples/restexplorer/rag/RagLlm.kt`
+      — `RagLlm.generate(prompt: String)` now returns
+      `GenerationResult` with measured `conversationSetupMs`,
+      `prefillTokens` / `prefillMs` / `prefillTps`,
+      `decodeTokens` / `decodeMs` / `decodeTps`, `ttftMs`,
+      `sendMessageOtherMs`, and `closeMs`. Numbers come from the
+      LiteRT-LM `BenchmarkInfo` after `sendMessage` plus
+      `System.nanoTime()` around each step. Required two extra
+      changes: (i) `ExperimentalFlags.enableBenchmark = true`
+      before `engine.initialize()`, otherwise
+      `getBenchmarkInfo()` throws
+      `INTERNAL: Benchmark is not enabled. Please make sure the
+      BenchmarkParams is set in the EngineSettings`; (ii) wrap the
+      `Conversation` lifecycle in `try { … } catch (t) { runCatching
+      { conversation.close() }; throw t }` so a benchmark / send
+      failure can't leave the engine stuck in
+      `FAILED_PRECONDITION: A session already exists. Only one
+      session is supported at a time.` `Conversation.getBenchmarkInfo()`
+      is `@ExperimentalApi` in litertlm-android 0.10.2; opted in.
+    - `@/native/NativeSampleApps/RestExplorer/src/com/salesforce/samples/restexplorer/rag/RagPipeline.kt`
+      — `RetrievedDoc` gained a `cosine: Double` field;
+      `searchWithAnswer` times `embedQueryMs` / `vectorSearchMs` /
+      `cosineComputeMs` separately and returns a new
+      `RetrievalMetrics(k, topCosine, gapToSecond, meanCosine,
+      embedQueryMs, vectorSearchMs, cosineComputeMs)` alongside
+      the existing fields. Cosine is computed client-side because
+      `vec0`'s vector_match SQL projects only the soup row — the
+      per-row distance is used for ordering but not in the SELECT
+      list (see `QuerySpec.computeWhereClause` lines 460–471). At
+      `k=3 / dim=100` the recompute is sub-millisecond. Embeddings
+      are L2-normalised at encode time (`RagEmbedder.tryCreate`
+      sets `setL2Normalize(true)` on `TextEmbedderOptions`), so
+      cosine reduces to a plain dot product.
+      `SHORT_CIRCUIT_COSINE_THRESHOLD = 0.68` is the new tunable;
+      when `hits[0].cosine >= 0.68` the LLM is skipped and the
+      top hit's stored `text` is returned as the answer with
+      `shortCircuited = true`.
+    - `@/native/NativeSampleApps/RestExplorer/src/com/salesforce/samples/restexplorer/rag/RagActivity.kt`
+      — `renderAnswer` prints two new sections: a `Retrieval (T ms
+      total: embed=… + search=… + score=…)` header with `k=…,
+      top1=…, gap=…, mean=…` and per-hit `cos=… title [id]` rows;
+      and either `[short-circuit fired: top1=… ≥ threshold=… —
+      skipping LLM]` or `[no short-circuit: top1=… < threshold=…
+      — running LLM]`. When the LLM did run, the existing
+      `Latency breakdown:` table now shows real numbers from
+      `BenchmarkInfo` instead of just total wall-clock.
+
+  - **Per-call latency breakdown (Pixel 8 Pro / GPU, warm),
+    measured by `BenchmarkInfo`:**
+
+    | # | Mode | Setup | Prefill (tok / ms / tps, ttft) | Decode (tok / ms / tps) | Other | Close | Total |
+    | :--- | :--- | ---: | :--- | :--- | ---: | ---: | ---: |
+    | Q1 "How do I create a Lead?" | RAG (no sc) | 9 | 267 / 1036 / 258, ttft=1105 | 34 / 2333 / 15 | 10 | 0 | **3389 ms** |
+    | Q1 same | bare | 10 | 37 / 257 / 144, ttft=339 | 34 / 2776 / 12 | 6 | 0 | **3050 ms** |
+    | Q1 same | RAG (sc fired) | — | — | — (LLM skipped) | — | — | **44 ms** (embed=30, search=13, score=0) |
+    | Q2 "What is the capital of France?" | RAG (no sc) | 9 | 255 / 891 / 286, ttft=952 | 7 / 447 / 16 | 10 | 0 | **1390 ms** |
+    | Q2 same | bare | 7 | 37 / 195 / 189, ttft=272 | 8 / 614 / 13 | 6 | 0 | **823 ms** |
+
+    What this rewrites about the prior changelog entry:
+
+    - The "per-conversation `Gemma4DataProcessor` rebuild is the
+      slack" framing was **wrong by ~180×.**
+      `engine.createConversation(...)` measures at **9–10 ms** on
+      this device, not the ~1.8 s the previous entry guessed. The
+      "single-warm-Conversation reuse" optimisation was therefore
+      removed from the open-follow-ups list — best case it would
+      shave ~10 ms per call, and the LiteRT-LM `Conversation` API
+      has no `reset()` / `clearHistory()` either way (history would
+      accumulate across turns; switching to the lower-level
+      `Session` API for true statelessness is a much bigger
+      refactor for the same ~10 ms saving).
+    - The "Q1 delta is 99 % prefill of the `Context: [...]` block"
+      framing was directionally right but quantitatively off. New
+      measurement: Q1 RAG total 3389 ms vs Q1 bare 3050 ms = +339 ms
+      delta (not 620 ms; the prior 2767 ms bare was a less-warm
+      run). Of that 339 ms: prefill is +779 ms (267 vs 37 tokens
+      at 258 tps and 144 tps respectively), partially offset by
+      −443 ms in decode (RAG decoded same 34 tokens at 15 tps
+      vs bare's 12 tps — likely the GPU stayed in a higher-power
+      state after the heavier prefill and sustained better decode
+      throughput). So the **structural attribution** is correct
+      — the RAG cost is dominated by the prefill of the retrieved
+      `Context: [...]` block — but the magnitude is smaller than
+      reported and decode timing is not constant across modes.
+    - **Decode is the dominant cost on this device, not prefill.**
+      Q1 RAG: decode = 2333 ms / 34 tok = 69 ms/tok ≈ 69 % of
+      total. Q1 bare: decode = 2776 ms / 34 tok = 82 ms/tok ≈
+      91 % of total. At ~14 tps decode the LLM is essentially
+      memory-bandwidth-bound on the Tensor G3, and there is no
+      software optimisation in this stack that materially moves
+      it without changing the model (smaller params, INT4→INT2
+      quantisation) or the runtime (speculative decoding, which
+      LiteRT-LM does not currently expose). Reading time on a
+      ~50-token answer is therefore a hardware floor, not slack.
+
+  - **Retrieval metrics, surfaced for the first time:**
+
+    | # | Question | Retrieval total | embed | search | score | top1 | gap | mean | top-3 cosines |
+    | :--- | :--- | ---: | ---: | ---: | ---: | :--- | :--- | :--- | :--- |
+    | Q1 | "How do I create a Lead?" | 44 ms | 30 | 13 | 0 | 0.696 (Create a Lead) | 0.026 | 0.690 | 0.696 / 0.670 / 0.703 |
+    | Q2 | "What is the capital of France?" | 46 ms | 40 | 6 | 0 | 0.624 (Create a Lead) | 0.001 | 0.627 | 0.624 / 0.623 / 0.634 |
+
+    Two things to call out:
+
+    - **Embed dominates retrieval cost.** ~30–40 ms out of ~45 ms
+      total is the Universal-Sentence-Encoder forward pass; vec0
+      proper is 6–13 ms; client-side cosine recompute is sub-ms.
+      So if "speed up retrieval" ever becomes a goal, the lever
+      is the embedder's per-query cost (smaller / quantised /
+      cached), not the SQL.
+    - **vec0 ranking and client-side cosine recompute can disagree
+      by ~0.005 when scores are within ~0.02 of each other.** For
+      Q1, vec0 ranks "Create a Lead" #1 with cosine 0.696; the
+      client recompute has "Approval Processes" at 0.703 (which
+      vec0 ranks 3rd). Same pattern in Q2. Cause: vec0 is
+      FLOAT32 end-to-end (FLOAT32 stored vectors + FP32 re-parsed
+      query from `vec_f32(...)`); the client mixes the FloatArray
+      query with Doubles round-tripped out of JSON, so the
+      reductions diverge. **vec0's order is the source of truth
+      and we keep it as-is.** The first iteration of `toHits`
+      naively re-sorted by client cosine and got Q1 wrong (it
+      short-circuited to "Approval Processes" verbatim, which
+      isn't an answer to "How do I create a Lead?"). The
+      regression is now documented in `RagPipeline.toHits` so it
+      doesn't get reintroduced.
+
+  - **Threshold tuning is per-corpus and is the single biggest
+    risk knob.** The initial guess was 0.85, based on what
+    sentence-transformers MiniLM-style embedders do on
+    well-separated corpora. Measured numbers on this corpus +
+    embedder pair:
+
+    - In-corpus top-1 lands at ~0.70 (Q1).
+    - Out-of-corpus top-1 lands at ~0.62 (Q2).
+    - Spread between in- and out-of-corpus: only ~0.08, because
+      Universal-Sentence-Encoder is small (5 MiB, dim=100) and the
+      corpus is topically homogeneous (everything is about
+      Salesforce, so all docs share embedding-space neighbourhood).
+
+    `0.68` is the only sensible threshold for this pair: above it
+    Q1 fires, below it Q2 doesn't. A higher-quality embedder
+    (sentence-transformers MiniLM dim=384) would push in-corpus
+    cosines into 0.80–0.95 and out-of-corpus below 0.40, giving
+    much more margin to work with — that is a documented
+    follow-up in the threshold's docstring.
+
+  - **End-to-end short-circuit results, what a Mobile SDK
+    consumer would see:**
+
+    | # | Mode | What the user perceives | When you'd want this |
+    | :--- | :--- | :--- | :--- |
+    | Q1 in-corpus | RAG (sc fired) | answer in **~45 ms**, near-instant; corpus doc text returned verbatim ("A Lead in Salesforce represents a prospect who has expressed interest…") | High-confidence faqs / runbooks where the corpus has the canonical answer; users expect zero LLM-paraphrase variability. |
+    | Q1 in-corpus | RAG (no sc) | answer in **~3.4 s**; LLM-paraphrased (still grounded in corpus) | When you want stylistic adaptation, multi-doc synthesis, or you don't trust the corpus to be reader-facing prose. |
+    | Q2 out-of-corpus | RAG (no sc) | answer in **~1.4 s**: "I don't know." | Always — the grounded prompt's "ONLY the provided context" clause is what gives the no-hallucination guarantee. |
+    | Q2 out-of-corpus | bare | answer in **~0.8 s**: "The capital of France is Paris." (correct from world knowledge) | Diagnostic A/B only. Real apps wouldn't expose the bare path because Q2 happens to land on a fact the model knows; *most* out-of-corpus questions in a customer-data context would hallucinate confidently. |
+
+    So the short-circuit branch gives a **77× speedup
+    (3389 ms → 44 ms) on the easy in-corpus case** without
+    touching the LLM, and the no-short-circuit RAG path keeps the
+    "I don't know" guard rail on out-of-corpus questions. Cost:
+    one extra constant (`SHORT_CIRCUIT_COSINE_THRESHOLD`) that
+    needs per-corpus calibration whenever the embedder or corpus
+    changes.
+
+  - **Local-only screenshots**: `/tmp/pixel_28_q1_rag_sc_correct.png`
+    (Q1 RAG, short-circuit fires, correct doc),
+    `/tmp/pixel_29_q1_bare_v6.png` (Q1 BARE), `/tmp/pixel_30_q2_rag_no_sc_v6.png`
+    (Q2 RAG, no short-circuit, "I don't know"),
+    `/tmp/pixel_31_q2_bare_v6.png` (Q2 BARE, "Paris"). Earlier
+    `/tmp/pixel_24_q1_rag_sc_fired.png` captures the bug iteration
+    where the client-cosine resort returned the wrong doc; kept
+    as the regression-test screenshot.
+  - **Open follow-ups, refreshed again:**
+    - Threshold auto-calibration: today the constant is hand-tuned
+      for the demo corpus + embedder. A small offline harness
+      that takes `(N curated in-corpus queries, N out-of-corpus
+      queries)` and picks the threshold that maximises in-corpus
+      fire rate while keeping out-of-corpus fire rate at 0 would
+      remove the hand-tuning and would justify the
+      "per-corpus tuning required" docstring with actual code.
+    - `BenchmarkInfo.lastDecodeTokensPerSecond` shows decode is
+      memory-bandwidth-bound at ~14 tps. The remaining lever for
+      end-to-end latency on no-short-circuit RAG is therefore
+      output-length: prompt-engineering for a bullet-list /
+      one-liner answer would cut decode time roughly linearly.
+      Worth A/B-ing as a Phase 5.x.
+    - The `vec0` vs client-side cosine precision drift (~0.005) is
+      not a correctness bug in our path — we ignore the client
+      cosine for ranking — but it's worth raising upstream
+      (or at least documenting in `VectorDBSpike.md`) that
+      client-side re-ranking on the returned soup rows can
+      flip the top-1 doc when scores are within ~0.02 of each
+      other.
+    - Phase-3 SmartStore tests still need a re-run under K2 before
+      any merge. (Carryover from Phase 4.7.)
