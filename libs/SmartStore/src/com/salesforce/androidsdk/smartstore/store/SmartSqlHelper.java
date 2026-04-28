@@ -78,6 +78,12 @@ public class SmartSqlHelper  {
 	}
 
     public static final String SOUP = "_soup";
+
+    /**
+     * Vector DB spike. Third token in {@code {soupName:path:vec}} references,
+     * which resolve to the sibling vec0 virtual table name.
+     */
+    public static final String VEC_SUFFIX_TOKEN = "vec";
 	
 	/**
 	 * Convert "smart" sql query to actual sql
@@ -149,6 +155,12 @@ public class SmartSqlHelper  {
 						matcher.appendReplacement(sql, columnName.replace("$", "\\$") /* treat any $ as litteral */);
 						break;
 				}
+			} else if (parts.length == 3 && VEC_SUFFIX_TOKEN.equals(parts[2])) {
+				// Vector DB spike. {soupName:path:vec} resolves to the sibling
+				// vec0 virtual table name. Used by QuerySpec.vector_match.
+				String path = parts[1];
+				String vecTableName = getVecTableNameForPathForSmartSql(db, soupName, path, position);
+				matcher.appendReplacement(sql, vecTableName);
 			} else if (parts.length > 2) {
 				reportSmartSqlError("Invalid soup/path reference " + fullMatch, position);
 			}
@@ -191,6 +203,27 @@ public class SmartSqlHelper  {
 			reportSmartSqlError("Unknown soup " + soupName, position);
 		}
 		return soupTableName;
+	}
+
+	/**
+	 * Vector DB spike. Resolve a {@code {soupName:path:vec}} reference to the
+	 * sibling vec0 virtual-table name. The name is stored as the IndexSpec's
+	 * {@code columnName} when the soup is registered (see
+	 * {@link SmartStore#registerSoupUsingTableName}).
+	 */
+	private String getVecTableNameForPathForSmartSql(SQLiteDatabase db, String soupName, String path, int position) {
+		IndexSpec[] specs = DBHelper.getInstance(db).getIndexSpecs(db, soupName);
+		for (IndexSpec spec : specs) {
+			if (spec.path.equals(path)) {
+				if (spec.type != SmartStore.Type.vector) {
+					reportSmartSqlError("Path '" + path + "' on soup '" + soupName
+							+ "' is not a vector index (type=" + spec.type + ")", position);
+				}
+				return spec.columnName;
+			}
+		}
+		reportSmartSqlError("Soup '" + soupName + "' has no index on path '" + path + "'", position);
+		return null; // unreachable
 	}
 	
 	private void reportSmartSqlError(String message, int position) {

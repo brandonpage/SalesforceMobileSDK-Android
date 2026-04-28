@@ -271,6 +271,78 @@ public class QuerySpec {
     }
 
     /**
+     * Vector DB spike. Build a k-NN query spec against a Type.vector index.
+     *
+     * @param soupName    soup registered with at least one Type.vector index on {@code path}
+     * @param path        vector index path (e.g. {@code "embedding"})
+     * @param queryVector the query embedding as a float[]
+     * @param k           maximum number of nearest neighbors to return
+     * @param pageSize    page size (usually equals {@code k})
+     */
+    public static QuerySpec buildVectorMatchQuerySpec(String soupName, String path,
+                                                      float[] queryVector, int k, int pageSize) {
+        return buildVectorMatchQuerySpec(soupName, null, path, queryVector, k, null, Order.ascending, pageSize);
+    }
+
+    /**
+     * Vector DB spike. Build a k-NN query spec against a Type.vector index, with
+     * explicit selectPaths and optional secondary ordering.
+     *
+     * @param soupName    soup registered with at least one Type.vector index on {@code path}
+     * @param selectPaths paths to project from each matched row (null = whole soup)
+     * @param path        vector index path (e.g. {@code "embedding"})
+     * @param queryVector the query embedding as a float[]
+     * @param k           maximum number of nearest neighbors to return
+     * @param orderPath   optional secondary order path (typically null — results come
+     *                    back in vec0 distance order already)
+     * @param order       order direction (typically ascending)
+     * @param pageSize    page size (usually equals {@code k})
+     */
+    public static QuerySpec buildVectorMatchQuerySpec(String soupName, String[] selectPaths, String path,
+                                                      float[] queryVector, int k,
+                                                      String orderPath, Order order, int pageSize) {
+        return buildVectorMatchQuerySpec(soupName, selectPaths, path,
+                floatArrayToVecJson(queryVector), k, orderPath, order, pageSize);
+    }
+
+    /**
+     * Overload accepting the query vector pre-formatted as a JSON array literal
+     * (e.g. {@code "[0.1,0.2,0.3]"}). Used by {@link #fromJSON} and tests that
+     * want to exercise the SQL path without producing a float[] first.
+     */
+    public static QuerySpec buildVectorMatchQuerySpec(String soupName, String[] selectPaths, String path,
+                                                      String queryVectorJson, int k,
+                                                      String orderPath, Order order, int pageSize) {
+        if (path == null) {
+            throw new SmartStoreException("vector_match requires a non-null index path");
+        }
+        if (k <= 0) {
+            throw new SmartStoreException("vector_match k must be > 0");
+        }
+        // matchKey carries the query vector JSON (inlined via vec_f32 in SQL).
+        // beginKey carries k as a String, bound positionally via getArgs().
+        return new QuerySpec(soupName, selectPaths, QueryType.vector_match,
+                queryVectorJson, Integer.toString(k), null, null,
+                orderPath, order == null ? Order.ascending : order, pageSize, path);
+    }
+
+    /**
+     * Vector DB spike. Serialize a float[] to a JSON array literal suitable for
+     * {@code vec_f32('[…]')} inlining in a SQL statement.
+     */
+    public static String floatArrayToVecJson(float[] v) {
+        if (v == null) return null;
+        StringBuilder sb = new StringBuilder(v.length * 10 + 2);
+        sb.append('[');
+        for (int i = 0; i < v.length; i++) {
+            if (i > 0) sb.append(',');
+            sb.append(Float.toString(v[i]));
+        }
+        sb.append(']');
+        return sb.toString();
+    }
+
+    /**
      * Return a query spec for a smart query
      * @param smartSql
      * @param pageSize
@@ -385,6 +457,18 @@ public class QuerySpec {
                         // statement arg binding doesn't seem to work so inlining matchKey
                         + ") ";
                 break;
+            case vector_match:
+                // Vector DB spike. SQL assembled here; query vector is inlined via
+                // sqlite-vec's vec_f32('[...]') JSON constructor because BLOBs do not
+                // flow through the existing String[] args pipeline. k is bound via
+                // getArgs() (carried in beginKey).
+                pred = computeFieldReference(SmartStore.SOUP_ENTRY_ID) + " IN ("
+                        + SELECT + "rowid "
+                        + FROM + computeSoupVecReference(path) + " "
+                        + WHERE + SmartStore.EMBEDDING_COL + " MATCH vec_f32('" + matchKey + "') "
+                        + "AND k = ?"
+                        + ") ";
+                break;
             default:
                 throw new SmartStoreException("Fell through switch: " + queryType);
         }
@@ -448,6 +532,15 @@ public class QuerySpec {
     private String computeSoupFtsReference() {
         return computeSoupReference() + SmartStore.FTS_SUFFIX;
     }
+
+    /**
+     * Vector DB spike. SmartSqlHelper resolves {soupName:path:vec} to the
+     * sibling vec0 virtual table name ({@code <soupTable>_<idx>_vec}).
+     * @return vec0 soup-table reference for smart sql query
+     */
+    private String computeSoupVecReference(String vectorPath) {
+        return "{" + soupName + ":" + vectorPath + ":vec}";
+    }
     
     /**
      * @param field
@@ -477,6 +570,11 @@ public class QuerySpec {
                 return new String[] {beginKey, endKey};
         case match:
             return null; // baking matchKey into query
+        case vector_match:
+            // Vector DB spike. Query vector inlined via vec_f32('[...]') in
+            // computeWhereClause; only k needs binding. k is carried in beginKey
+            // to avoid widening this API to Object[].
+            return beginKey == null ? null : new String[] { beginKey };
         case smart:
         	return null;
         default:
@@ -511,6 +609,12 @@ public class QuerySpec {
 	    case range:   querySpec = buildRangeQuerySpec(soupName, selectPaths, path, beginKey, endKey, orderPath, order, pageSize); break;
 	    case like:    querySpec = buildLikeQuerySpec(soupName, selectPaths, path, likeKey, orderPath, order, pageSize); break;
         case match:   querySpec = buildMatchQuerySpec(soupName, selectPaths, path, matchKey, orderPath, order, pageSize); break;
+        case vector_match:
+            // Vector DB spike. JSON form carries the query vector JSON as matchKey
+            // and k as beginKey (see buildVectorMatchQuerySpec and getArgs).
+            int k = beginKey != null ? Integer.parseInt(beginKey) : pageSize;
+            querySpec = buildVectorMatchQuerySpec(soupName, selectPaths, path, matchKey, k, orderPath, order, pageSize);
+            break;
 	    case smart:   querySpec = buildSmartQuerySpec(smartSql, pageSize); break;
 	    default: throw new RuntimeException("Fell through switch: " + queryType);
 		}
@@ -525,6 +629,11 @@ public class QuerySpec {
         range,
         like,
         match,
+        /**
+         * Vector DB spike. k-NN search against a sibling vec0 virtual table.
+         * Built via {@link QuerySpec#buildVectorMatchQuerySpec}.
+         */
+        vector_match,
         smart
     }
 

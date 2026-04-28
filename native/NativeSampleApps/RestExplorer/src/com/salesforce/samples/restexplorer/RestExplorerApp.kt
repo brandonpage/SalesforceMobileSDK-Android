@@ -42,6 +42,8 @@ import com.salesforce.androidsdk.analytics.logger.SalesforceLogger.Level.WARN
 import com.salesforce.androidsdk.analytics.logger.SalesforceLogger.setLogReceiverFactory
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.getInstance
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager
+import com.salesforce.androidsdk.smartstore.app.SmartStoreUpgradeManager
 import com.salesforce.androidsdk.ui.LoginActivity
 
 /**
@@ -137,6 +139,12 @@ internal class RestExplorerApp : Application() {
     /**
      * A protected constructor.
      *
+     * Vector DB spike Phase 4: now extends [SmartStoreSDKManager] (rather than
+     * [SalesforceSDKManager] directly) so the RAG demo at
+     * `com.salesforce.samples.restexplorer.rag.RagActivity` can grab a
+     * `SmartStore` via `SmartStoreSDKManager.getInstance().getGlobalSmartStore()`
+     * without requiring a logged-in user.
+     *
      * @param context The application context
      * @param mainActivity The activity to be launched after the login flow
      * @param loginActivity The login activity
@@ -145,10 +153,11 @@ internal class RestExplorerApp : Application() {
         context: Context,
         mainActivity: Class<out Activity?>,
         loginActivity: Class<out Activity?>
-    ) : SalesforceSDKManager(
+    ) : SmartStoreSDKManager(
         context,
         mainActivity,
-        loginActivity
+        loginActivity,
+        /* nativeLoginActivity = */ null
     ) {
 
         private var frontActivityForDevActions: Activity? = null
@@ -197,6 +206,11 @@ internal class RestExplorerApp : Application() {
                 if (!hasInstance()) {
                     setInstance(RestExplorerSDKManager(context, mainActivity, LoginActivity::class.java))
                 }
+                // SmartStore schema upgrade must run once per process before any
+                // SmartStore is opened; SmartStoreSDKManager.init() does this
+                // internally, but we bypass that path because we want the
+                // RestExplorer subclass to be the singleton instance.
+                SmartStoreUpgradeManager.getInstance().upgrade()
                 initInternal(context)
             }
         }

@@ -71,6 +71,13 @@ public class SmartStore  {
 	// Fts table suffix
 	public static final String FTS_SUFFIX = "_fts";
 
+	// Vec table suffix (vector DB spike). A sibling virtual table per Type.vector
+	// index is created as <soupTable>_<idx>_vec using sqlite-vec's vec0 module.
+	public static final String VEC_SUFFIX = "_vec";
+
+	// Embedding column name inside a vec0 virtual table.
+	public static final String EMBEDDING_COL = "embedding";
+
 	// Table to keep track of soup's index specs
     public static final String SOUP_INDEX_MAP_TABLE = "soup_index_map";
 
@@ -82,6 +89,9 @@ public class SmartStore  {
     public static final String PATH_COL = "path";
     protected static final String COLUMN_NAME_COL = "columnName";
     public static final String COLUMN_TYPE_COL = "columnType";
+    // Serialized VectorMeta JSON for Type.vector indices; null for other types.
+    // Added in DB_VERSION 4 as part of the vector DB spike.
+    public static final String INDEX_META_COL = "indexMeta";
 
     // Columns of a soup table
     protected static final String ID_COL = "id";
@@ -163,6 +173,10 @@ public class SmartStore  {
 	                      .append(",").append(PATH_COL).append(" TEXT")
 	                      .append(",").append(COLUMN_NAME_COL).append(" TEXT")
 	                      .append(",").append(COLUMN_TYPE_COL).append(" TEXT")
+	                      // Vector DB spike: indexMeta carries the serialized VectorMeta
+	                      // JSON for Type.vector indices; null for all other types.
+	                      // Matches the schema produced by DBOpenHelper.onUpgrade(3 -> 4).
+	                      .append(",").append(INDEX_META_COL).append(" TEXT")
 	                      .append(")");
 	        db.execSQL(sb.toString());
 	        // Add index on soup_name column
@@ -332,6 +346,10 @@ public class SmartStore  {
 		if (IndexSpec.hasFTS(indexSpecs)) {
 			features.put("FTS");
 		}
+		// Vector DB spike.
+		if (IndexSpec.hasVector(indexSpecs)) {
+			features.put("VECTOR");
+		}
 		final JSONObject attributes = new JSONObject();
 		try {
 			attributes.put("features", features);
@@ -353,6 +371,7 @@ public class SmartStore  {
         StringBuilder createTableStmt = new StringBuilder();          // to create new soup table
 		StringBuilder createFtsStmt = new StringBuilder();            // to create fts table
         List<String> createIndexStmts = new ArrayList<String>();      // to create indices on new soup table
+        List<String> createVecStmts = new ArrayList<String>();        // vector DB spike: vec0 virtual tables
         List<ContentValues> soupIndexMapInserts = new ArrayList<ContentValues>();  // to be inserted in soup index map table
         IndexSpec[] indexSpecsToCache = new IndexSpec[indexSpecs.length];
         List<String> columnsForFts = new ArrayList<String>();
@@ -378,6 +397,12 @@ public class SmartStore  {
             if (TypeGroup.value_indexed_with_json_extract.isMember(indexSpec.type)) {
                 columnName = "json_extract(" + SOUP_COL + ", '$." + indexSpec.path + "')";
             }
+            // Vector DB spike: for vector indices, the effective "column" is the
+            // sibling vec0 virtual table's name. SmartSqlHelper later resolves
+            // {soupName:path:vec} against this value.
+            if (indexSpec.type == Type.vector) {
+                columnName = soupTableName + "_" + i + VEC_SUFFIX;
+            }
 
             // for create table
             if (TypeGroup.value_extracted_to_column.isMember(indexSpec.type)) {
@@ -390,19 +415,48 @@ public class SmartStore  {
 				columnsForFts.add(columnName);
 			}
 
+            // Vector DB spike: emit `CREATE VIRTUAL TABLE <soupTable>_<i>_vec
+            // USING vec0(embedding <kind>[<dim>] distance_metric=<metric>)`
+            // for each Type.vector index.
+            if (indexSpec.type == Type.vector) {
+                if (indexSpec.vectorMeta == null) {
+                    // Defense-in-depth. IndexSpec's constructor enforces this.
+                    throw new SmartStoreException(
+                        "Vector index '" + indexSpec.path + "' is missing VectorMeta");
+                }
+                createVecStmts.add(String.format(
+                    "CREATE VIRTUAL TABLE %s USING vec0(%s)",
+                    columnName, indexSpec.vectorMeta.columnSpec()));
+            }
+
             // for insert
             ContentValues values = new ContentValues();
             values.put(SOUP_NAME_COL, soupName);
             values.put(PATH_COL, indexSpec.path);
             values.put(COLUMN_NAME_COL, columnName);
             values.put(COLUMN_TYPE_COL, indexSpec.type.toString());
+            // Vector DB spike: persist VectorMeta JSON (null for non-vector indices)
+            // so it survives process restarts and can be rehydrated by DBHelper.
+            if (indexSpec.type == Type.vector) {
+                try {
+                    values.put(INDEX_META_COL, indexSpec.vectorMeta.toJSON().toString());
+                } catch (Exception e) {
+                    throw new SmartStoreException(
+                        "Failed to serialize VectorMeta for index '" + indexSpec.path + "'", e);
+                }
+            }
             soupIndexMapInserts.add(values);
 
             // for create index
-			createIndexStmts.add(String.format(createIndexFormat, soupTableName, "" + i, soupTableName, columnName));;
+            // Vector DB spike: the main soup table has no column to index for
+            // vector types, so skip the CREATE INDEX for them.
+            if (indexSpec.type != Type.vector) {
+                createIndexStmts.add(String.format(createIndexFormat, soupTableName, "" + i, soupTableName, columnName));
+            }
 
             // for the cache
-            indexSpecsToCache[i] = new IndexSpec(indexSpec.path, indexSpec.type, columnName);
+            indexSpecsToCache[i] = new IndexSpec(indexSpec.path, indexSpec.type, columnName,
+                indexSpec.type == Type.vector ? indexSpec.vectorMeta : null);
 
             i++;
         }
@@ -420,6 +474,11 @@ public class SmartStore  {
 		if (columnsForFts.size() > 0) {
 			db.execSQL(createFtsStmt.toString());
 		}
+
+        // Vector DB spike: create sibling vec0 virtual table(s).
+        for (String createVecStmt : createVecStmts) {
+            db.execSQL(createVecStmt);
+        }
 
         for (String createIndexStmt : createIndexStmts) {
             db.execSQL(createIndexStmt);
@@ -525,13 +584,16 @@ public class SmartStore  {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 
-	        // Getting index specs from indexPaths skipping json1 index specs
+	        // Getting index specs from indexPaths skipping json1 index specs.
+	        // Vector DB spike: also include Type.vector specs so re-indexing
+	        // cascades into sibling vec0 virtual tables.
 			Map<String, IndexSpec> mapAllSpecs = IndexSpec.mapForIndexSpecs(getSoupIndexSpecs(soupName));
 			List<IndexSpec> indexSpecsList = new ArrayList<IndexSpec>();
 			for (String indexPath : indexPaths) {
 				if (mapAllSpecs.containsKey(indexPath)) {
 					IndexSpec indexSpec = mapAllSpecs.get(indexPath);
-					if (TypeGroup.value_extracted_to_column.isMember(indexSpec.type)) {
+					if (TypeGroup.value_extracted_to_column.isMember(indexSpec.type)
+							|| indexSpec.type == Type.vector) {
 						indexSpecsList.add(indexSpec);
 					}
 				}
@@ -546,6 +608,8 @@ public class SmartStore  {
 			}
 
 			boolean hasFts = IndexSpec.hasFTS(indexSpecs);
+			// Vector DB spike.
+			boolean hasVec = IndexSpec.hasVector(indexSpecs);
 
 			if (handleTx) {
 				db.beginTransaction();
@@ -563,7 +627,11 @@ public class SmartStore  {
 							soupElt = new JSONObject(soupRaw);
 			                ContentValues contentValues = new ContentValues();
 			                projectIndexedPaths(soupElt, contentValues, indexSpecs, TypeGroup.value_extracted_to_column);
-			                DBHelper.getInstance(db).update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "");
+			                // contentValues may be empty if none of the re-index targets
+			                // project to main-table columns (e.g. a vector-only re-index).
+			                if (contentValues.size() > 0) {
+			                    DBHelper.getInstance(db).update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "");
+			                }
 
 							// Fts
 							if (hasFts) {
@@ -571,6 +639,13 @@ public class SmartStore  {
 								ContentValues contentValuesFts = new ContentValues();
 								projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, TypeGroup.value_extracted_to_fts_column);
 								DBHelper.getInstance(db).update(db, soupTableNameFts, contentValuesFts, ROWID_PREDICATE, soupEntryId + "");
+							}
+
+							// Vector DB spike: re-project vector embeddings into vec0
+							// tables. We reuse updateVectorTables (DELETE + INSERT) so
+							// null embeddings correctly drop the row from search.
+							if (hasVec) {
+								updateVectorTables(db, soupElt, indexSpecs, Long.parseLong(soupEntryId));
 							}
 			        	}
 			        	catch (JSONException e) {
@@ -634,6 +709,10 @@ public class SmartStore  {
 				if (hasFTS(soupName)) {
 					DBHelper.getInstance(db).delete(db, soupTableName + FTS_SUFFIX, null);
 				}
+				// Vector DB spike: clear every sibling vec0 table for the soup.
+				if (hasVector(soupName)) {
+					clearVectorTables(db, DBHelper.getInstance(db).getIndexSpecs(db, soupName));
+				}
 			} finally {
 				db.setTransactionSuccessful();
 				db.endTransaction();
@@ -666,9 +745,20 @@ public class SmartStore  {
     	synchronized(db) {
 			String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName != null) {
+				// Vector DB spike: snapshot indexSpecs BEFORE the removeFromCache call
+				// below, otherwise we lose the vec0 table names we need to DROP.
+				boolean soupHasVector = hasVector(soupName);
+				IndexSpec[] vecIndexSpecsForDrop = soupHasVector
+						? DBHelper.getInstance(db).getIndexSpecs(db, soupName)
+						: null;
+
 	            db.execSQL("DROP TABLE IF EXISTS " + soupTableName);
 				if (hasFTS(soupName)) {
 					db.execSQL("DROP TABLE IF EXISTS " + soupTableName + FTS_SUFFIX);
+				}
+				// Vector DB spike: drop every sibling vec0 virtual table.
+				if (soupHasVector) {
+					dropVectorTables(db, vecIndexSpecsForDrop);
 				}
 
 	            try {
@@ -1020,6 +1110,11 @@ public class SmartStore  {
 					db.insert(soupTableNameFts, null, contentValuesFts);
 				}
 
+				// Vector DB spike: cascade INSERT into every sibling vec0 table.
+				if (success && hasVector(soupName)) {
+					insertIntoVectorTables(db, soupElt, indexSpecs, soupEntryId);
+				}
+
 	            // Commit if successful
 	            if (success) {
 	                if (handleTx) {
@@ -1050,6 +1145,18 @@ public class SmartStore  {
 	}
 
 	/**
+	 * Vector DB spike.
+	 * @param soupName
+	 * @return true if soup has at least one Type.vector index
+	 */
+	private boolean hasVector(String soupName) {
+		SQLiteDatabase db = getDatabase();
+		synchronized (db) {
+			return DBHelper.getInstance(db).hasVector(db, soupName);
+		}
+	}
+
+	/**
 	 * Populate content values by projecting index specs that have a type in typeGroup
 	 * @param soupElt
 	 * @param contentValues
@@ -1062,6 +1169,109 @@ public class SmartStore  {
 				projectIndexedPath(soupElt, contentValues, indexSpec);
 			}
 		}
+	}
+
+	/**
+	 * Vector DB spike. Cascade INSERTs into every sibling vec0 virtual table for
+	 * the given soup. Called after the main soup-table INSERT succeeds.
+	 */
+	private void insertIntoVectorTables(SQLiteDatabase db, JSONObject soupElt, IndexSpec[] indexSpecs, long soupEntryId) {
+		for (IndexSpec indexSpec : indexSpecs) {
+			if (indexSpec.type != Type.vector) continue;
+			String vecJson = projectVectorToJson(soupElt, indexSpec);
+			if (vecJson == null) continue; // null embedding, skip — row just won't appear in vector search
+			ContentValues values = new ContentValues();
+			values.put(ROWID_COL, soupEntryId);
+			values.put(EMBEDDING_COL, vecJson); // vec0 accepts JSON text
+			// InsertHelper not working against vec0 virtual table, same as FTS.
+			db.insert(indexSpec.columnName, null, values);
+		}
+	}
+
+	/**
+	 * Vector DB spike. Cascade row-level UPDATEs into every sibling vec0 virtual
+	 * table. We DELETE+INSERT rather than UPDATE so null embeddings correctly
+	 * remove the row from vector search.
+	 */
+	private void updateVectorTables(SQLiteDatabase db, JSONObject soupElt, IndexSpec[] indexSpecs, long soupEntryId) {
+		for (IndexSpec indexSpec : indexSpecs) {
+			if (indexSpec.type != Type.vector) continue;
+			DBHelper.getInstance(db).delete(db, indexSpec.columnName, ROWID_PREDICATE, Long.toString(soupEntryId));
+			String vecJson = projectVectorToJson(soupElt, indexSpec);
+			if (vecJson == null) continue;
+			ContentValues values = new ContentValues();
+			values.put(ROWID_COL, soupEntryId);
+			values.put(EMBEDDING_COL, vecJson);
+			db.insert(indexSpec.columnName, null, values);
+		}
+	}
+
+	/**
+	 * Vector DB spike. Cascade a set-based DELETE (by rowid IN …) into every
+	 * sibling vec0 virtual table.
+	 */
+	private void deleteFromVectorTables(SQLiteDatabase db, IndexSpec[] indexSpecs, String rowIdsPredicate, String... whereArgs) {
+		for (IndexSpec indexSpec : indexSpecs) {
+			if (indexSpec.type != Type.vector) continue;
+			DBHelper.getInstance(db).delete(db, indexSpec.columnName, rowIdsPredicate, whereArgs);
+		}
+	}
+
+	/**
+	 * Vector DB spike. Clear every sibling vec0 virtual table for a soup.
+	 */
+	private void clearVectorTables(SQLiteDatabase db, IndexSpec[] indexSpecs) {
+		for (IndexSpec indexSpec : indexSpecs) {
+			if (indexSpec.type != Type.vector) continue;
+			DBHelper.getInstance(db).delete(db, indexSpec.columnName, null);
+		}
+	}
+
+	/**
+	 * Vector DB spike. Drop every sibling vec0 virtual table for a soup (called
+	 * from {@link #dropSoup}).
+	 */
+	private void dropVectorTables(SQLiteDatabase db, IndexSpec[] indexSpecs) {
+		for (IndexSpec indexSpec : indexSpecs) {
+			if (indexSpec.type != Type.vector) continue;
+			db.execSQL("DROP TABLE IF EXISTS " + indexSpec.columnName);
+		}
+	}
+
+	/**
+	 * Vector DB spike. Project an embedding value from a soup element and return
+	 * it as a JSON-array text suitable for vec0 INSERT. Returns null if the soup
+	 * element has no value at this path. Throws {@link SmartStoreException} on
+	 * dimension mismatch or non-numeric elements.
+	 */
+	private static String projectVectorToJson(JSONObject soupElt, IndexSpec indexSpec) {
+		Object raw = project(soupElt, indexSpec.path);
+		if (raw == null) return null;
+		if (!(raw instanceof JSONArray)) {
+			throw new SmartStoreException("Vector index path '" + indexSpec.path
+					+ "' must resolve to a JSON array (was " + raw.getClass().getSimpleName() + ")");
+		}
+		JSONArray arr = (JSONArray) raw;
+		VectorMeta meta = indexSpec.vectorMeta;
+		if (meta != null && arr.length() != meta.getDimension()) {
+			throw new SmartStoreException("Vector value for '" + indexSpec.path
+					+ "' has " + arr.length() + " components but VectorMeta expects " + meta.getDimension());
+		}
+		StringBuilder sb = new StringBuilder(arr.length() * 10 + 2);
+		sb.append('[');
+		for (int i = 0; i < arr.length(); i++) {
+			if (i > 0) sb.append(',');
+			double v;
+			try {
+				v = arr.getDouble(i);
+			} catch (JSONException e) {
+				throw new SmartStoreException("Vector value for '" + indexSpec.path
+						+ "' has a non-numeric element at index " + i, e);
+			}
+			sb.append(Double.toString(v));
+		}
+		sb.append(']');
+		return sb.toString();
 	}
 
     /**
@@ -1187,6 +1397,13 @@ public class SmartStore  {
 					ContentValues contentValuesFts = new ContentValues();
 					projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, TypeGroup.value_extracted_to_fts_column);
 					success = DBHelper.getInstance(db).update(db, soupTableNameFts, contentValuesFts, ROWID_PREDICATE, soupEntryId + "") == 1;
+				}
+
+				// Vector DB spike: cascade UPDATE (as DELETE + INSERT) into every
+				// sibling vec0 table so null embeddings correctly remove the row
+				// from vector search.
+				if (success && hasVector(soupName)) {
+					updateVectorTables(db, soupElt, indexSpecs, soupEntryId);
 				}
 
 				if (success) {
@@ -1339,6 +1556,13 @@ public class SmartStore  {
 					DBHelper.getInstance(db).delete(db, soupTableName + FTS_SUFFIX, getRowIdsPredicate(soupEntryIds));
 				}
 
+				// Vector DB spike: cascade DELETE into every sibling vec0 table.
+				if (hasVector(soupName)) {
+					deleteFromVectorTables(db,
+						DBHelper.getInstance(db).getIndexSpecs(db, soupName),
+						getRowIdsPredicate(soupEntryIds));
+				}
+
 	            if (handleTx) {
 	                db.setTransactionSuccessful();
 	            }
@@ -1380,11 +1604,28 @@ public class SmartStore  {
                 String subQuerySql = String.format("SELECT %s FROM (%s) LIMIT %d", ID_COL, convertSmartSql(querySpec.idsSmartSql), querySpec.pageSize);
                 String[] args = querySpec.getArgs();
 
-				DBHelper.getInstance(db).delete(db, soupTableName, buildInStatement(ID_COL, subQuerySql), args);
-
+				// Cascades MUST run before the main DELETE: subQuerySql is
+				// materialized against the main soup table, so once we have
+				// deleted from there it would return no rows and the sibling
+				// virtual tables would never be cleaned up.
+				//
+				// FTS note: reordered here as part of the vector DB spike;
+				// previously the FTS cascade ran after the main delete and
+				// was silently a no-op. There is no regression test covering
+				// that path in the existing suite.
 				if (hasFTS(soupName)) {
 					DBHelper.getInstance(db).delete(db, soupTableName + FTS_SUFFIX, buildInStatement(ROWID_COL, subQuerySql), args);
 				}
+
+				// Vector DB spike: cascade DELETE into every sibling vec0 table.
+				if (hasVector(soupName)) {
+					deleteFromVectorTables(db,
+						DBHelper.getInstance(db).getIndexSpecs(db, soupName),
+						buildInStatement(ROWID_COL, subQuerySql),
+						args);
+				}
+
+				DBHelper.getInstance(db).delete(db, soupTableName, buildInStatement(ID_COL, subQuerySql), args);
 
 				if (handleTx) {
 					db.setTransactionSuccessful();
@@ -1532,7 +1773,13 @@ public class SmartStore  {
         integer("INTEGER"),
         floating("REAL"),
         full_text("TEXT"),
-        json1(null);
+        json1(null),
+        /**
+         * Vector DB spike. Vector values are stored in a sibling vec0 virtual
+         * table rather than as a column on the main soup table, so the column
+         * type is null (same pattern as json1).
+         */
+        vector(null);
 
         private String columnType;
 
@@ -1565,6 +1812,16 @@ public class SmartStore  {
             @Override
             public boolean isMember(Type type) {
                 return type == Type.json1;
+            }
+        },
+        /**
+         * Vector DB spike. Projects to a sibling vec0 virtual table keyed on
+         * soupEntryId, not to a column on the main soup table or FTS table.
+         */
+        value_extracted_to_vec_table {
+            @Override
+            public boolean isMember(Type type) {
+                return type == Type.vector;
             }
         };
 

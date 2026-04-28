@@ -43,20 +43,20 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDirs(arrayOf("src"))
-            resources.srcDirs(arrayOf("src"))
-            aidl.srcDirs(arrayOf("src"))
-            renderscript.srcDirs(arrayOf("src"))
-            res.srcDirs(arrayOf("res"))
-            assets.srcDirs(arrayOf("assets"))
+            java.srcDirs("src")
+            resources.srcDirs("src")
+            aidl.srcDirs("src")
+            renderscript.srcDirs("src")
+            res.srcDirs("res")
+            assets.srcDirs("assets")
             jniLibs.srcDir("libs")
         }
 
         getByName("androidTest") {
             setRoot("../test/SmartStoreTest")
-            java.srcDirs(arrayOf("../test/SmartStoreTest/src"))
-            resources.srcDirs(arrayOf("../test/SmartStoreTest/src"))
-            res.srcDirs(arrayOf("../test/SmartStoreTest/res"))
+            java.srcDirs("../test/SmartStoreTest/src")
+            resources.srcDirs("../test/SmartStoreTest/src")
+            res.srcDirs("../test/SmartStoreTest/res")
         }
     }
 
@@ -101,4 +101,11 @@ android {
         classDirectories.setFrom(javaTree, kotlinTree)
         executionData.setFrom(fileTree("$rootDir/firebase") { setIncludes(arrayListOf("**/coverage.ec")) })
     }
+}
+
+// Vector DB spike: match SalesforceSDK's toolchain (libs/SalesforceSDK/build.gradle.kts:147)
+// so the newly-added Kotlin sources (VectorMeta.kt, SmartStoreVectorSearch.kt)
+// compile against the same JVM target as the existing Java sources.
+kotlin {
+    jvmToolchain(17)
 }

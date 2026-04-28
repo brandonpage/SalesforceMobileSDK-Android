@@ -44,17 +44,47 @@ public class IndexSpec {
     public final String path;
     public final Type type;
     public final String columnName;
+    /**
+     * Vector DB spike. Non-null iff {@code type == Type.vector}. Carries
+     * dimension / metric / kind used to build the sibling vec0 virtual table.
+     * Persisted as JSON in the {@code indexMeta} column of
+     * {@code soup_index_map} (added in {@code DB_VERSION = 4}).
+     */
+    public final VectorMeta vectorMeta;
 
     public IndexSpec(String path, Type type) {
-        this.path = path;
-        this.type = type;
-        this.columnName = null; // undefined
+        this(path, type, null, null);
     }
 
     public IndexSpec(String path, Type type, String columnName) {
+        this(path, type, columnName, null);
+    }
+
+    /**
+     * Vector DB spike. Full constructor including optional {@link VectorMeta}.
+     * {@code vectorMeta} must be non-null when {@code type == Type.vector} and
+     * must be null otherwise.
+     */
+    public IndexSpec(String path, Type type, String columnName, VectorMeta vectorMeta) {
         this.path = path;
         this.type = type;
         this.columnName = columnName;
+        if (type == Type.vector && vectorMeta == null) {
+            throw new SmartStore.SmartStoreException(
+                "IndexSpec of Type.vector requires a non-null VectorMeta (path=" + path + ")");
+        }
+        if (type != Type.vector && vectorMeta != null) {
+            throw new SmartStore.SmartStoreException(
+                "IndexSpec of type " + type + " must have a null VectorMeta (path=" + path + ")");
+        }
+        this.vectorMeta = vectorMeta;
+    }
+
+    /**
+     * Vector DB spike. Convenience factory for a Type.vector IndexSpec.
+     */
+    public static IndexSpec forVector(String path, VectorMeta vectorMeta) {
+        return new IndexSpec(path, Type.vector, null, vectorMeta);
     }
 
     @Override
@@ -64,6 +94,8 @@ public class IndexSpec {
         result = 31 * result + type.hashCode();
         if (columnName != null) 
         	result = 31 * result + columnName.hashCode();
+        if (vectorMeta != null)
+            result = 31 * result + vectorMeta.hashCode();
         return result;
     }
 
@@ -84,6 +116,10 @@ public class IndexSpec {
         	result = result && (columnName == rhs.columnName);
     	else
     		result = result && columnName.equals(rhs.columnName);
+        if (vectorMeta == null)
+            result = result && (rhs.vectorMeta == null);
+        else
+            result = result && vectorMeta.equals(rhs.vectorMeta);
         
         return result;
     }
@@ -104,6 +140,11 @@ public class IndexSpec {
 		json.put("path", path);
 		json.put("type", type);
 		json.put("columnName", columnName);
+		// Vector DB spike. Serialize the VectorMeta (if any) under "vectorMeta"
+		// so round-tripping an IndexSpec through JSON preserves dim/metric/kind.
+		if (vectorMeta != null) {
+			json.put("vectorMeta", vectorMeta.toJSON());
+		}
 		return json;
 	}
 	
@@ -140,7 +181,12 @@ public class IndexSpec {
 	 * @throws JSONException
 	 */
 	public static IndexSpec fromJSON(JSONObject json) throws JSONException {
-		return new IndexSpec(json.getString("path"), Type.valueOf(json.getString("type")), json.optString("columnName"));
+		String path = json.getString("path");
+		Type type = Type.valueOf(json.getString("type"));
+		String columnName = json.optString("columnName");
+		// Vector DB spike. Preserve vectorMeta round-trip when present.
+		VectorMeta vectorMeta = VectorMeta.fromJSON(json.optJSONObject("vectorMeta"));
+		return new IndexSpec(path, type, columnName, vectorMeta);
 	}
 	
 	
@@ -176,6 +222,20 @@ public class IndexSpec {
 	public static boolean hasJSON1(IndexSpec[] indexSpecs) {
 		for (IndexSpec indexSpec : indexSpecs) {
 			if (indexSpec.type == Type.json1) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Vector DB spike.
+	 * @param indexSpecs
+	 * @return true if at least one of the indexSpec is of type vector
+	 */
+	public static boolean hasVector(IndexSpec[] indexSpecs) {
+		for (IndexSpec indexSpec : indexSpecs) {
+			if (indexSpec.type == Type.vector) {
 				return true;
 			}
 		}

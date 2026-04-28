@@ -59,7 +59,10 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	// 1 --> up until 2.3
 	// 2 --> starting at 2.3 (new meta data table long_operations_status)
 	// 3 --> starting at 4.3 (soup_names table changes to soup_attr)
-	public static final int DB_VERSION = 3;
+	// 4 --> Vector DB spike: adds `indexMeta TEXT` column to soup_index_map
+	//       so Type.vector IndexSpecs can round-trip their VectorMeta (dim,
+	//       metric, kind). See VectorDBImplementationPlan.md §2.3-2.4.
+	public static final int DB_VERSION = 4;
 	public static final String DEFAULT_DB_NAME = "smartstore";
 	private static final String TAG = "DBOpenHelper";
 	private static final String DB_NAME_SUFFIX = ".db";
@@ -220,6 +223,19 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+		// Vector DB spike: add indexMeta column to soup_index_map on 3 -> 4.
+		// The column is NULLable so existing rows (non-vector indices) remain
+		// valid without a data migration.
+		if (oldVersion < 4 && newVersion >= 4) {
+			try {
+				db.execSQL("ALTER TABLE " + SmartStore.SOUP_INDEX_MAP_TABLE
+						+ " ADD COLUMN " + SmartStore.INDEX_META_COL + " TEXT");
+			} catch (Exception e) {
+				SmartStoreLogger.e(TAG, "Failed to add " + SmartStore.INDEX_META_COL
+						+ " column during DB upgrade from " + oldVersion + " to " + newVersion, e);
+				throw e;
+			}
+		}
 	}
 
 	/**

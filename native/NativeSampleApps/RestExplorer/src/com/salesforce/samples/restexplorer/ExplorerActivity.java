@@ -137,8 +137,15 @@ public class ExplorerActivity extends SalesforceActivity {
 		// Makes the result area scrollable.
 		resultText = (TextView) findViewById(R.id.result_text);
 		resultText.setMovementMethod(new ScrollingMovementMethod());
-		((RestExplorerApp.RestExplorerSDKManager) RestExplorerApp.RestExplorerSDKManager.getInstance())
-				.addDevAction(this, "Export Credentials to Clipboard", this::exportCredentials);
+		final RestExplorerApp.RestExplorerSDKManager devMgr =
+				(RestExplorerApp.RestExplorerSDKManager) RestExplorerApp.RestExplorerSDKManager.getInstance();
+		devMgr.addDevAction(this, "Export Credentials to Clipboard", this::exportCredentials);
+		// Vector DB spike Phase 4: launch RAG demo directly from the dev menu.
+		// DevActionHandler is a SAM interface with a no-arg onSelected()
+		// method, so the lambda takes no parameters.
+		devMgr.addDevAction(this, getString(R.string.rag_dev_action),
+				() -> startActivity(new android.content.Intent(this,
+						com.salesforce.samples.restexplorer.rag.RagActivity.class)));
 
 		// Fix UI being drawn behind status and navigation bars on Android 15+
 		if (SDK_INT > UPSIDE_DOWN_CAKE) {

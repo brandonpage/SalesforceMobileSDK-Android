@@ -1,7 +1,13 @@
 plugins {
     android
     `kotlin-android`
-    kotlin("plugin.serialization") version "1.9.24"
+    // Vector DB spike Phase 4: bumped 1.9.24 → 2.0.21 to match the
+    // project-wide KGP bump (2.2.21). Older serialization plugin versions
+    // are not loadable by the new compiler.
+    kotlin("plugin.serialization") version "2.0.21"
+    // Kotlin 2.0+ replaced the `composeOptions` mechanism with a dedicated
+    // Compose Compiler plugin; version comes from the buildscript classpath.
+    kotlin("plugin.compose")
 }
 
 dependencies {
@@ -64,10 +70,6 @@ android {
         renderScript = true
         aidl = true
         buildConfig = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
     }
 
     buildTypes {

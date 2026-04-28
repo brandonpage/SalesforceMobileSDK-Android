@@ -44,19 +44,19 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDirs(arrayOf("src"))
-            resources.srcDirs(arrayOf("src"))
-            aidl.srcDirs(arrayOf("src"))
-            renderscript.srcDirs(arrayOf("src"))
-            res.srcDirs(arrayOf("res"))
-            assets.srcDirs(arrayOf("assets"))
+            java.srcDirs("src")
+            resources.srcDirs("src")
+            aidl.srcDirs("src")
+            renderscript.srcDirs("src")
+            res.srcDirs("res")
+            assets.srcDirs("assets")
         }
 
         getByName("androidTest") {
             setRoot("../test/SalesforceHybridTest")
-            java.srcDirs(arrayOf("../test/SalesforceHybridTest/src"))
-            resources.srcDirs(arrayOf("../test/SalesforceHybridTest/src"))
-            res.srcDirs(arrayOf("../test/SalesforceHybridTest/res"))
+            java.srcDirs("../test/SalesforceHybridTest/src")
+            resources.srcDirs("../test/SalesforceHybridTest/src")
+            res.srcDirs("../test/SalesforceHybridTest/res")
         }
     }
 

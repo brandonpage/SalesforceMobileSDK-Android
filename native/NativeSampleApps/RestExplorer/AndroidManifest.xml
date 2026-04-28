@@ -13,6 +13,12 @@
 		android:enableOnBackInvokedCallback="true"
         tools:targetApi="tiramisu">
 
+		<!-- Vector DB spike Phase 4: LiteRT-LM uses these native libs when
+		     running the LLM on the GPU backend. Both are non-required so
+		     devices that lack OpenCL (typical emulators) still install. -->
+		<uses-native-library android:name="libvndksupport.so" android:required="false" />
+		<uses-native-library android:name="libOpenCL.so" android:required="false" />
+
 		<!-- Launcher screen -->
 		<activity android:name=".ExplorerActivity"
 			android:theme="@style/SalesforceSDK_Fullscreen"
@@ -29,6 +35,17 @@
 			</intent-filter>
 
 		</activity>
+
+		<!-- Vector DB spike Phase 4: RAG demo activity.
+		     exported=true so developers can launch directly via
+		         adb shell am start -n com.salesforce.samples.restexplorer/.rag.RagActivity
+		     without going through the Salesforce login flow. The activity only
+		     reads/writes a local SmartStore soup named "ragDocs" and calls
+		     MediaPipe Tasks on-device — no remote interaction, no credentials. -->
+		<activity android:name=".rag.RagActivity"
+			android:label="@string/rag_title"
+			android:theme="@style/SalesforceSDK"
+			android:exported="true" />
 
 		<!-- Login activity -->
 		<!--

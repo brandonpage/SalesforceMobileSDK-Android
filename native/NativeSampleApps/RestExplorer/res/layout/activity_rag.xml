@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Vector DB spike Phase 4: RAG demo screen.
+
+    Layout is deliberately flat and dependency-free (no Material, no
+    ConstraintLayout) so it works with the same minSdk/themes as the rest of
+    the RestExplorer sample. Two scroll regions: the top holds the status
+    block + controls + query input; the bottom shows the retrieval hits and
+    the generated answer.
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rag_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:padding="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Model status block -->
+        <TextView
+            android:id="@+id/rag_section_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:text="@string/rag_model_status_label" />
+
+        <TextView
+            android:id="@+id/rag_model_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:textSize="12sp"
+            android:paddingTop="4dp"
+            android:paddingBottom="12dp"
+            android:text="@string/rag_initializing" />
+
+        <!-- Controls row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/rag_index_btn"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="@string/rag_index_button" />
+
+            <Button
+                android:id="@+id/rag_clear_btn"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="@string/rag_clear_button" />
+        </LinearLayout>
+
+        <!-- Query entry -->
+        <EditText
+            android:id="@+id/rag_query"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textLongMessage"
+            android:hint="@string/rag_query_hint"
+            android:paddingTop="12dp"
+            android:importantForAutofill="no" />
+
+        <!-- Ask row: RAG vs bare-LLM A/B baseline. Both buttons send the
+             same query to the same model; the difference is whether the
+             retrieved context is packed into the prompt. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/rag_ask_btn"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="@string/rag_ask_button" />
+
+            <Button
+                android:id="@+id/rag_ask_bare_btn"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="@string/rag_ask_bare_button" />
+        </LinearLayout>
+
+        <!-- Results section -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:paddingTop="16dp"
+            android:text="@string/rag_results_label" />
+
+        <TextView
+            android:id="@+id/rag_results"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:textSize="12sp"
+            android:textIsSelectable="true"
+            android:paddingTop="4dp" />
+    </LinearLayout>
+</ScrollView>

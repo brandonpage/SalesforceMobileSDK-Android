@@ -11,6 +11,18 @@ include("hybrid:HybridSampleApps:MobileSyncExplorerHybrid")
 include("native:NativeSampleApps:RestExplorer")
 include("native:NativeSampleApps:AuthFlowTester")
 
+// Vector DB spike: consume a locally-vendored sqlcipher-android build that
+// statically links sqlite-vec + LibTomCrypt (see VectorDBImplementationPlan.md
+// Phase 1). `net.zetetic:sqlcipher-android` in any dependency block below is
+// transparently substituted with the `:sqlcipher` project inside the included
+// build.
+includeBuild("external/sqlcipher-android") {
+    dependencySubstitution {
+        substitute(module("net.zetetic:sqlcipher-android"))
+            .using(project(":sqlcipher"))
+    }
+}
+
 pluginManagement {
     repositories {
         google()

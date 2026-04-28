@@ -9,6 +9,11 @@ plugins {
     jacoco
     kotlin("plugin.serialization") version "2.0.21"
     kotlin("plugin.parcelize")
+    // Vector DB spike Phase 4: Kotlin 2.0+ replaced the
+    // `composeOptions { kotlinCompilerExtensionVersion }` mechanism with a
+    // dedicated Compose Compiler plugin. Version is supplied by the root
+    // buildscript classpath (KGP 2.2.21).
+    kotlin("plugin.compose")
 }
 
 dependencies {
@@ -78,19 +83,19 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDirs(arrayOf("src"))
-            resources.srcDirs(arrayOf("src"))
-            aidl.srcDirs(arrayOf("src"))
-            renderscript.srcDirs(arrayOf("src"))
-            res.srcDirs(arrayOf("res"))
-            assets.srcDirs(arrayOf("assets"))
+            java.srcDirs("src")
+            resources.srcDirs("src")
+            aidl.srcDirs("src")
+            renderscript.srcDirs("src")
+            res.srcDirs("res")
+            assets.srcDirs("assets")
         }
 
         getByName("androidTest") {
             setRoot("../test/SalesforceSDKTest")
-            java.srcDirs(arrayOf("../test/SalesforceSDKTest/src"))
-            resources.srcDirs(arrayOf("../test/SalesforceSDKTest/src"))
-            res.srcDirs(arrayOf("../test/SalesforceSDKTest/res"))
+            java.srcDirs("../test/SalesforceSDKTest/src")
+            resources.srcDirs("../test/SalesforceSDKTest/src")
+            res.srcDirs("../test/SalesforceSDKTest/res")
             @Suppress("UnstableApiUsage")
             assets.directories.add("../../shared/test")
         }
@@ -117,11 +122,6 @@ android {
         aidl = true
         buildConfig = true
         compose = true
-    }
-
-    @Suppress("UnstableApiUsage")
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
     }
 
     val convertCodeCoverage: TaskProvider<JacocoReport> = tasks.register<JacocoReport>("convertedCodeCoverage") {

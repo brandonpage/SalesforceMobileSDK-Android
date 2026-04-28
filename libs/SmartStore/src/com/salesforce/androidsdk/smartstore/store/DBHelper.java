@@ -107,6 +107,10 @@ public class DBHelper {
 	// Cache of soup name to boolean indicating if soup uses FTS
 	private final LruCache<String, Boolean> soupNameToHasFTS = new LruCache<>(CACHES_COUNT_LIMIT);
 
+	// Vector DB spike. Cache of soup name to boolean indicating if soup has at
+	// least one Type.vector index (sibling vec0 virtual table).
+	private final LruCache<String, Boolean> soupNameToHasVector = new LruCache<>(CACHES_COUNT_LIMIT);
+
 	// Cache of table name to get-next-id compiled statements
 	private final LruCache<String, SQLiteStatement> tableNameToNextIdStatementsMap = new LruCache<String, SQLiteStatement>(CACHES_COUNT_LIMIT) {
 		@Override
@@ -169,6 +173,8 @@ public class DBHelper {
 	public void cacheIndexSpecs(String soupName, IndexSpec[] indexSpecs) {
 		soupNameToIndexSpecsMap.put(soupName, indexSpecs.clone());
 		soupNameToHasFTS.put(soupName, IndexSpec.hasFTS(indexSpecs));
+		// Vector DB spike.
+		soupNameToHasVector.put(soupName, IndexSpec.hasVector(indexSpecs));
 	}
 
 	/**
@@ -185,6 +191,16 @@ public class DBHelper {
 	 */
 	public Boolean getCachedHasFTS(String soupName) {
 		return soupNameToHasFTS.get(soupName);
+	}
+
+	/**
+	 * Vector DB spike.
+	 * @param soupName
+	 * @return cached indicator that the soup has at least one vector index, or null
+	 *         if the soup has not been loaded yet
+	 */
+	public Boolean getCachedHasVector(String soupName) {
+		return soupNameToHasVector.get(soupName);
 	}
 
 	/**
@@ -207,6 +223,8 @@ public class DBHelper {
 		soupNameToTableNamesMap.remove(soupName);
 		soupNameToIndexSpecsMap.remove(soupName);
 		soupNameToHasFTS.remove(soupName);
+		// Vector DB spike.
+		soupNameToHasVector.remove(soupName);
 	}
 
 	private void cleanupRawCountSqlToStatementMaps(String tableName) {
@@ -446,6 +464,9 @@ public class DBHelper {
 		soupNameToExistMap.evictAll();
 		soupNameToTableNamesMap.evictAll();
 		soupNameToIndexSpecsMap.evictAll();
+		soupNameToHasFTS.evictAll();
+		// Vector DB spike.
+		soupNameToHasVector.evictAll();
 		tableNameToInsertHelpersMap.evictAll();
 		tableNameToNextIdStatementsMap.evictAll();
 		rawCountSqlToStatementsMap.evictAll();
@@ -505,8 +526,14 @@ public class DBHelper {
     protected IndexSpec[] getIndexSpecsFromDb(SQLiteDatabase db, String soupName) {
         Cursor cursor = null;
         try {
-            cursor = query(db, SmartStore.SOUP_INDEX_MAP_TABLE, new String[] {SmartStore.PATH_COL, SmartStore.COLUMN_NAME_COL, SmartStore.COLUMN_TYPE_COL}, null,
-                    null, SmartStore.SOUP_NAME_PREDICATE, soupName);
+            // Vector DB spike: additionally read INDEX_META_COL so we can
+            // rehydrate VectorMeta for Type.vector indices.
+            cursor = query(db, SmartStore.SOUP_INDEX_MAP_TABLE, new String[] {
+                    SmartStore.PATH_COL,
+                    SmartStore.COLUMN_NAME_COL,
+                    SmartStore.COLUMN_TYPE_COL,
+                    SmartStore.INDEX_META_COL
+            }, null, null, SmartStore.SOUP_NAME_PREDICATE, soupName);
 
             if (!cursor.moveToFirst()) {
                 throw new SmartStoreException(String.format("%s does not have any indices", soupName));
@@ -516,7 +543,17 @@ public class DBHelper {
                 String path = cursor.getString(cursor.getColumnIndex(SmartStore.PATH_COL));
                 String columnName = cursor.getString(cursor.getColumnIndex(SmartStore.COLUMN_NAME_COL));
                 Type columnType = Type.valueOf(cursor.getString(cursor.getColumnIndex(SmartStore.COLUMN_TYPE_COL)));
-                indexSpecs.add(new IndexSpec(path, columnType, columnName));
+                VectorMeta vectorMeta = null;
+                int indexMetaColIdx = cursor.getColumnIndex(SmartStore.INDEX_META_COL);
+                if (columnType == Type.vector && indexMetaColIdx >= 0 && !cursor.isNull(indexMetaColIdx)) {
+                    try {
+                        vectorMeta = VectorMeta.fromJSON(new JSONObject(cursor.getString(indexMetaColIdx)));
+                    } catch (JSONException e) {
+                        throw new SmartStoreException(
+                            "Failed to parse indexMeta JSON for soup '" + soupName + "', path '" + path + "'", e);
+                    }
+                }
+                indexSpecs.add(new IndexSpec(path, columnType, columnName, vectorMeta));
             } while (cursor.moveToNext());
             return indexSpecs.toArray(new IndexSpec[0]);
         }
@@ -533,6 +570,18 @@ public class DBHelper {
 	public boolean hasFTS(SQLiteDatabase db, String soupName) {
 		getIndexSpecs(db, soupName); // will populate cache if needed
 		return getCachedHasFTS(soupName);
+	}
+
+	/**
+	 * Vector DB spike.
+	 * @param db
+	 * @param soupName
+	 * @return true if soup has at least one Type.vector index
+	 */
+	public boolean hasVector(SQLiteDatabase db, String soupName) {
+		getIndexSpecs(db, soupName); // will populate cache if needed
+		Boolean cached = getCachedHasVector(soupName);
+		return cached != null && cached;
 	}
 
     /**

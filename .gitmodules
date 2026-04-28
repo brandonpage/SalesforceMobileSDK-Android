@@ -1,3 +1,15 @@
 [submodule "external/shared"]
 	path = external/shared
     url = https://github.com/forcedotcom/SalesforceMobileSDK-Shared.git
+[submodule "external/sqlcipher-android"]
+	path = external/sqlcipher-android
+	url = https://github.com/sqlcipher/sqlcipher-android
+[submodule "external/sqlite-vec"]
+	path = external/sqlite-vec
+	url = https://github.com/asg017/sqlite-vec
+[submodule "external/sqlcipher"]
+	path = external/sqlcipher
+	url = https://github.com/sqlcipher/sqlcipher
+[submodule "external/libtomcrypt"]
+	path = external/libtomcrypt
+	url = https://github.com/libtom/libtomcrypt
