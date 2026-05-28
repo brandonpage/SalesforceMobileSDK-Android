@@ -2,6 +2,7 @@ package com.salesforce.androidsdk.app
 
 import android.app.Activity
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SdkSuppress
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.salesforce.androidsdk.auth.HttpAccess
@@ -382,6 +383,7 @@ class SalesforceSDKManagerTests {
         assertNotNull(devActions["Switch User"])
     }
 
+    @SdkSuppress(minSdkVersion = 31) // LoginActivity requires PictureInPictureUiState (API 31+)
     @Test
     fun getDevActions_ExcludesLogoutAndSwitchUser_ForLoginActivity() {
         // Arrange

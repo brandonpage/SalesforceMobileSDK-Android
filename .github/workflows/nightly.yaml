@@ -29,17 +29,6 @@ jobs:
     with:
       lib: ${{ matrix.lib }}
     secrets: inherit
-  android-nightly-React:
-    if: success() || failure()
-    needs: [android-nightly-Hybrid]
-    strategy:
-      fail-fast: false
-      matrix:
-        lib: [SalesforceReact]
-    uses: ./.github/workflows/reusable-lib-workflow.yaml
-    with:
-      lib: ${{ matrix.lib }}
-    secrets: inherit
   android-nightly-UI-Tests:
     uses: ./.github/workflows/reusable-ui-workflow.yaml
     secrets: inherit

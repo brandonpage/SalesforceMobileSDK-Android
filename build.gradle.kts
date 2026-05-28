@@ -32,6 +32,15 @@ allprojects {
             languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
         }
     }
+
+    // Force kotlin-reflect to match the project Kotlin version.
+    // MockK 1.14.x transitively pulls in a mismatched kotlin-reflect, causing
+    // ArrayIndexOutOfBoundsException in reflection on API 31/32 test runners.
+    configurations.all {
+        resolutionStrategy {
+            force("org.jetbrains.kotlin:kotlin-reflect:2.3.20")
+        }
+    }
 }
 
 apply(plugin = "org.jetbrains.dokka")
@@ -48,7 +57,6 @@ dependencies {
     add("dokka", project(":libs:SmartStore"))
     add("dokka", project(":libs:MobileSync"))
     add("dokka", project(":libs:SalesforceHybrid"))
-    add("dokka", project(":libs:SalesforceReact"))
 }
 
 tasks.register<Jar>("javadocJar") {

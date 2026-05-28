@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.auth
 import android.webkit.CookieManager
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
@@ -819,6 +820,7 @@ class LoginViewModelMockTest {
         bioAuthManager.cleanUp(nativeLoginUser)
     }
 
+    @SdkSuppress(minSdkVersion = 31) // Requires PictureInPictureUiState from androidx.activity 1.13 (API 31+)
     @Test
     fun showBiometricAuthenticationButton_ReturnsTrue_ForNonNativeLoginUser() {
         val bioAuthManager = SalesforceSDKManager.getInstance().biometricAuthenticationManager
