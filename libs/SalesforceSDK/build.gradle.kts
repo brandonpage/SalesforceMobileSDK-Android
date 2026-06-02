@@ -13,6 +13,12 @@ plugins {
     id("org.jetbrains.dokka")
 }
 
+configurations.configureEach {
+    resolutionStrategy {
+        force("org.jetbrains.kotlin:kotlin-reflect:2.3.20")
+    }
+}
+
 dependencies {
     api(project(":libs:SalesforceAnalytics"))
     api(libs.okhttp)
