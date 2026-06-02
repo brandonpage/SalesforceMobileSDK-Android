@@ -85,6 +85,20 @@ class LoginViewModelTest {
     private val bootConfig = BootConfig.getBootConfig(context)
     private val viewModel = LoginViewModel(bootConfig)
 
+    /**
+     * Polls until [condition] returns true, checking every 50ms up to [timeoutMs].
+     * Replaces brittle Thread.sleep(200) calls that were insufficient on CI.
+     */
+    private fun awaitCondition(timeoutMs: Long = 2000, condition: () -> Boolean) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (!condition()) {
+            if (System.currentTimeMillis() >= deadline) {
+                throw AssertionError("Condition not met within ${timeoutMs}ms")
+            }
+            Thread.sleep(50)
+        }
+    }
+
     @Before
     fun setup() {
         // This is required for the LiveData to actually update during the test
@@ -157,7 +171,7 @@ class LoginViewModelTest {
         viewModel.selectedServer.value = FAKE_SERVER_URL
 
         // Wait for loginUrl to update after selectedServer change (async coroutine)
-        Thread.sleep(200)
+        awaitCondition { viewModel.loginUrl.value?.contains(FAKE_SERVER_URL) == true }
         assertNotNull(viewModel.loginUrl.value)
         // LoginUrlSource prepends https:// to scheme-less servers before URL generation.
         assertTrue(viewModel.loginUrl.value!!.startsWith("https://$FAKE_SERVER_URL"))
@@ -171,7 +185,7 @@ class LoginViewModelTest {
         viewModel.browserCustomTabUrl.observeForever { }
 
         // The setup() already triggers URL generation; wait for async completion.
-        Thread.sleep(200)
+        awaitCondition { viewModel.browserCustomTabUrl.value != null }
 
         val browserCustomTabUrl = viewModel.browserCustomTabUrl.value
         assertNotNull("browserCustomTabUrl should be populated for the admin flow", browserCustomTabUrl)
@@ -195,7 +209,7 @@ class LoginViewModelTest {
             SalesforceSDKManager.getInstance().useWebServerAuthentication = false
 
             viewModel.reloadWebView()
-            Thread.sleep(200)
+            awaitCondition { viewModel.browserCustomTabUrl.value != null }
 
             val browserCustomTabUrl = viewModel.browserCustomTabUrl.value
             val loginUrl = viewModel.loginUrl.value
@@ -233,7 +247,7 @@ class LoginViewModelTest {
         viewModel.browserCustomTabUrl.observeForever { }
 
         // Wait for initial generation.
-        Thread.sleep(200)
+        awaitCondition { viewModel.browserCustomTabUrl.value != null }
         val initialUrl = viewModel.browserCustomTabUrl.value
         assertNotNull(initialUrl)
         assertFalse(
@@ -242,7 +256,7 @@ class LoginViewModelTest {
         )
 
         viewModel.selectedServer.value = FAKE_SERVER_URL
-        Thread.sleep(200)
+        awaitCondition { viewModel.browserCustomTabUrl.value?.contains(FAKE_SERVER_URL) == true }
 
         val updatedUrl = viewModel.browserCustomTabUrl.value
         assertNotNull(updatedUrl)
@@ -366,7 +380,7 @@ class LoginViewModelTest {
 
         viewModel.selectedServer.value = FAKE_SERVER_URL
         // Wait for async update
-        Thread.sleep(200)
+        awaitCondition { viewModel.loginUrl.value?.contains(FAKE_SERVER_URL) == true }
         val newCodeChallenge = getSHA256Hash(viewModel.codeVerifier)
         assertNotEquals(originalCodeChallenge, newCodeChallenge)
         // LoginUrlSource prepends https:// to scheme-less servers before URL generation.
@@ -380,8 +394,11 @@ class LoginViewModelTest {
         assertTrue(viewModel.loginUrl.value!!.contains(originalCodeChallenge))
 
         viewModel.reloadWebView()
-        // Wait for async update
-        Thread.sleep(200)
+        // Wait for async update — new code challenge should differ from original
+        awaitCondition {
+            val url = viewModel.loginUrl.value
+            url != null && !url.contains(originalCodeChallenge)
+        }
         val newCodeChallenge = getSHA256Hash(viewModel.codeVerifier)
         assertNotNull(newCodeChallenge)
         assertNotEquals(originalCodeChallenge, newCodeChallenge)
@@ -399,7 +416,7 @@ class LoginViewModelTest {
         viewModel.authCodeForJwtFlow = FAKE_JWT_FLOW_AUTH
         viewModel.reloadWebView()
         // Wait for async update
-        Thread.sleep(200)
+        awaitCondition { viewModel.loginUrl.value != null && viewModel.loginUrl.value != expectedUrl }
         assertNotEquals(expectedUrl, viewModel.loginUrl.value)
 
         codeChallenge = getSHA256Hash(viewModel.codeVerifier)
@@ -431,7 +448,7 @@ class LoginViewModelTest {
 
         viewModel.pendingServer.value = myDomainUrl
         viewModel.applyPendingServer(pendingLoginServer = myDomainUrl)
-        Thread.sleep(200)
+        awaitCondition { viewModel.loginUrl.value?.startsWith(myDomainUrl) == true }
 
         assertEquals(myDomainUrl, viewModel.selectedServer.value)
         assertNotNull(viewModel.loginUrl.value)
@@ -470,7 +487,7 @@ class LoginViewModelTest {
 
         // Trigger URL generation
         viewModel.reloadWebView()
-        Thread.sleep(200)
+        awaitCondition { viewModel.loginUrl.value?.contains(customConsumerKey) == true }
 
         // Verify the URL contains the custom consumer key and redirect URI
         val loginUrl = viewModel.loginUrl.value!!
@@ -486,7 +503,7 @@ class LoginViewModelTest {
 
         // Trigger URL generation
         viewModel.reloadWebView()
-        Thread.sleep(200)
+        awaitCondition { viewModel.loginUrl.value?.contains(bootConfig.remoteAccessConsumerKey) == true }
 
         // Verify the URL contains the boot config values
         val loginUrl = viewModel.loginUrl.value!!
@@ -519,7 +536,7 @@ class LoginViewModelTest {
 
             // Trigger URL generation
             viewModel.reloadWebView()
-            Thread.sleep(200)
+            awaitCondition { viewModel.loginUrl.value?.contains(customConsumerKey) == true }
 
             // Verify the URL contains the custom app config values
             val loginUrl = viewModel.loginUrl.value!!
@@ -560,7 +577,7 @@ class LoginViewModelTest {
 
             // Trigger URL generation
             viewModel.reloadWebView()
-            Thread.sleep(200)
+            awaitCondition { viewModel.loginUrl.value?.contains(debugConsumerKey) == true }
 
             // Verify the URL contains the debug override values, not app config values
             val loginUrl = viewModel.loginUrl.value!!
@@ -721,7 +738,7 @@ class LoginViewModelTest {
 
             // Test with test server
             viewModel.selectedServer.value = "https://test.salesforce.com"
-            Thread.sleep(200)
+            awaitCondition { viewModel.loginUrl.value?.contains("test_consumer_key") == true }
             var loginUrl = viewModel.loginUrl.value!!
             assertTrue("URL should contain test consumer key. URL: $loginUrl",
                 loginUrl.contains("test_consumer_key"))
@@ -732,7 +749,7 @@ class LoginViewModelTest {
 
             // Test with production server
             viewModel.selectedServer.value = "https://login.salesforce.com"
-            Thread.sleep(200)
+            awaitCondition { viewModel.loginUrl.value?.contains("prod_consumer_key") == true }
             loginUrl = viewModel.loginUrl.value!!
             assertTrue("URL should contain prod consumer key. URL: $loginUrl",
                 loginUrl.contains("prod_consumer_key"))
@@ -758,7 +775,7 @@ class LoginViewModelTest {
 
         // Trigger URL generation
         viewModel.reloadWebView()
-        Thread.sleep(200)
+        awaitCondition { viewModel.loginUrl.value?.contains(customConsumerKey) == true }
 
         // Verify the URL is generated correctly without scopes
         val loginUrl = viewModel.loginUrl.value!!
@@ -782,7 +799,7 @@ class LoginViewModelTest {
 
         // Call reloadWebView
         viewModel.reloadWebView()
-        Thread.sleep(200)
+        Thread.sleep(200) // Brief wait to confirm no change occurs
 
         // Verify URL did not change
         assertEquals("frontDoorBridgeUrl should still be front door URL", frontDoorUrl, viewModel.frontDoorBridgeUrl.value)
@@ -811,7 +828,7 @@ class LoginViewModelTest {
                 ABOUT_BLANK, viewModel.loginUrl.value)
 
             // Wait for the new authorization URL to be generated
-            Thread.sleep(200)
+            awaitCondition { viewModel.loginUrl.value != null && viewModel.loginUrl.value != ABOUT_BLANK }
 
             // Verify a new URL was generated
             val newUrl = viewModel.loginUrl.value
@@ -844,7 +861,7 @@ class LoginViewModelTest {
             ABOUT_BLANK, viewModel.loginUrl.value)
 
         // Wait for the new authorization URL to be generated
-        Thread.sleep(200)
+        awaitCondition { viewModel.loginUrl.value != null && viewModel.loginUrl.value != initialUrl }
 
         // Verify a new URL was generated with different code challenge
         val newUrl = viewModel.loginUrl.value
@@ -865,7 +882,7 @@ class LoginViewModelTest {
 
         // Call reloadWebView
         viewModel.reloadWebView()
-        Thread.sleep(200)
+        Thread.sleep(200) // Brief wait to confirm no change occurs
 
         // Verify URL did not change
         assertEquals("loginUrl should not change when selectedServer is null",
@@ -886,7 +903,7 @@ class LoginViewModelTest {
 
             // Trigger URL generation
             viewModel.reloadWebView()
-            Thread.sleep(200)
+            awaitCondition { viewModel.loginUrl.value?.contains(bootConfig.remoteAccessConsumerKey) == true }
 
             // Verify the URL contains the boot config values (fallback)
             val loginUrl = viewModel.loginUrl.value!!
