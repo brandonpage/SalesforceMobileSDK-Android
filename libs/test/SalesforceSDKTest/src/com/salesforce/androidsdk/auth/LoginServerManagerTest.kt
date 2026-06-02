@@ -31,6 +31,7 @@ import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import android.content.res.Resources
 import android.content.res.XmlResourceParser
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
@@ -56,6 +57,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.xmlpull.v1.XmlPullParserException
@@ -63,6 +65,9 @@ import org.xmlpull.v1.XmlPullParserException
 @RunWith(AndroidJUnit4::class)
 @SmallTest
 class LoginServerManagerMockTest {
+
+    @get:Rule
+    val instantExecutorRule = InstantTaskExecutorRule()
 
     private var loginServerManager: LoginServerManager? = null
 

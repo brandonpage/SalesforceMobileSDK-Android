@@ -34,6 +34,16 @@ allprojects {
     }
 }
 
+subprojects {
+    configurations.all {
+        resolutionStrategy {
+            // Align kotlin-reflect with the Kotlin compiler version to prevent
+            // ArrayIndexOutOfBoundsException in MockK when introspecting class metadata.
+            force("org.jetbrains.kotlin:kotlin-reflect:2.3.20")
+        }
+    }
+}
+
 apply(plugin = "org.jetbrains.dokka")
 
 extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
