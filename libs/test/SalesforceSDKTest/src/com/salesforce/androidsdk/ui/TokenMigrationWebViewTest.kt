@@ -16,6 +16,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.MigrationCallbackRegistry
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -143,6 +144,7 @@ class TokenMigrationWebViewTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = 31) // Activity hierarchy references PictureInPictureUiState (API 31+); MockK proxy resolution fails on lower APIs
     fun shouldOverrideUrlLoading_returnsTrueForCallbackUrl_webServerFlow() {
         val activity = launchActivity()
         val mockResultCallback = createMockResultCallback()

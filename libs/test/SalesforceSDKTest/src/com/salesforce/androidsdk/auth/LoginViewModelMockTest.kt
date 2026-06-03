@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.auth
 import android.webkit.CookieManager
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
@@ -820,6 +821,7 @@ class LoginViewModelMockTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = 31) // Activity hierarchy references PictureInPictureUiState (API 31+); MockK proxy resolution fails on lower APIs
     fun showBiometricAuthenticationButton_ReturnsTrue_ForNonNativeLoginUser() {
         val bioAuthManager = SalesforceSDKManager.getInstance().biometricAuthenticationManager
                 as BiometricAuthenticationManager

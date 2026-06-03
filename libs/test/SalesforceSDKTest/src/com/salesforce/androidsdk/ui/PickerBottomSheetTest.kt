@@ -49,6 +49,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import androidx.test.rule.GrantPermissionRule
 import com.salesforce.androidsdk.R.string.sf__account_selector_text
@@ -119,6 +120,7 @@ class PickerBottomSheetTest {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Test
+    @SdkSuppress(minSdkVersion = 31) // Activity hierarchy references PictureInPictureUiState (API 31+); MockK proxy resolution fails on lower APIs
     fun pickerBottomSheet_publicApiUserAccountPicker_displaysUserAccountPicker() {
         val userAccountManager = mockk<UserAccountManager>(relaxed = true)
         composeTestRule.setContent {
