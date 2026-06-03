@@ -32,6 +32,15 @@ allprojects {
             languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
         }
     }
+
+    // Align kotlin-reflect with the compiler version (2.3.20). MockK 1.14.9 pulls
+    // kotlin-reflect 2.2.21 via BOM constraints, causing ArrayIndexOutOfBoundsException
+    // in ReflectJavaMember.getValueParameters() on API 31/32.
+    configurations.all {
+        resolutionStrategy {
+            force("org.jetbrains.kotlin:kotlin-reflect:2.3.20")
+        }
+    }
 }
 
 apply(plugin = "org.jetbrains.dokka")
