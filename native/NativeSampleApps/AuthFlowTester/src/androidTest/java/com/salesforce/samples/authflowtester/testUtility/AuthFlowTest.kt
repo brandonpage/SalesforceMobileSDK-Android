@@ -424,6 +424,7 @@ abstract class AuthFlowTest {
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
         scopeSelection: ScopeSelection = EMPTY,
         knownUserConfig: KnownUserConfig = user,
+        isMultiUser: Boolean = false,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
         app.migrateToNewApp(knownAppConfig, scopeSelection)
@@ -433,7 +434,7 @@ abstract class AuthFlowTest {
         assert(preAccessToken != postAccessToken)
         assert(preRefreshToken != postRefreshToken)
 
-        app.validateUser(knownLoginHostConfig, knownUserConfig)
+        app.validateUser(knownLoginHostConfig, knownUserConfig, isMultiUser = isMultiUser)
         app.validateOAuthValues(knownAppConfig, scopeSelection)
 
         // Assert new tokens work

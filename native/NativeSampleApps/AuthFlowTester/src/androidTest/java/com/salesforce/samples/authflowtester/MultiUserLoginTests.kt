@@ -228,6 +228,7 @@ class MultiUserLoginTests: AuthFlowTest() {
         migrateAndValidate(
             knownAppConfig = BEACON_OPAQUE,
             knownUserConfig = otherUser,
+            isMultiUser = true,
         )
 
         // Switch back to initial user and assert unaltered.
@@ -322,7 +323,7 @@ class MultiUserLoginTests: AuthFlowTest() {
 
         // Validate nothing changed for "otherUser" before user switch
         val (otherUserPostAccessToken, otherUserPostRefreshToken) = app.getTokens()
-        app.validateUser(knownLoginHostConfig = REGULAR_AUTH, knownUserConfig = otherUser)
+        app.validateUser(knownLoginHostConfig = REGULAR_AUTH, knownUserConfig = otherUser, isMultiUser = true)
         app.validateOAuthValues(knownAppConfig = ECA_OPAQUE, scopeSelection = EMPTY)
         assertEquals(otherUserAccessToken, otherUserPostAccessToken)
         assertEquals(otherUserRefreshToken, otherUserPostRefreshToken)
@@ -431,7 +432,13 @@ class MultiUserLoginTests: AuthFlowTest() {
         )
         waitForUserCount(sdkManager.userAccountManager, expectedCount = 1)
 
+        // Explicitly switch to User A so the UI refreshes after background logout
+        val remainingUser = sdkManager.userAccountManager.authenticatedUsers!!.first()
+        sdkManager.userAccountManager.switchToUser(remainingUser)
+        composeTestRule.waitForIdle()
+
         // Back on User A — MU gone, no BW
+        app.validateUser(REGULAR_AUTH, user, isMultiUser = false)
         app.validateUserAgent(REGULAR_AUTH, isMultiUser = false)
     }
 
