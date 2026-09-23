@@ -47,6 +47,7 @@ import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuthErrorCode;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -261,6 +262,58 @@ public class ClientManager {
             }
         }
         return false;
+    }
+
+    /**
+     * Verifies that the bound account still contains the credential generation represented by
+     * {@code expectedUser}, without rebuilding and decrypting the complete user profile.
+     */
+    @VisibleForTesting
+    boolean isBoundAccountCurrent(@NonNull UserAccount expectedUser) {
+        if (account == null || !accountExists()) {
+            return false;
+        }
+        final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
+        final String refreshToken = SalesforceSDKManager.decrypt(
+                accountManager.getPassword(account), encryptionKey);
+        final String authToken = decryptUserData(AccountManager.KEY_AUTHTOKEN, encryptionKey);
+        final String instanceUrl = decryptUserData(
+                AuthenticatorService.KEY_INSTANCE_URL, encryptionKey);
+        final String loginUrl = decryptUserData(AuthenticatorService.KEY_LOGIN_URL, encryptionKey);
+        final String clientId = decryptUserData(AuthenticatorService.KEY_CLIENT_ID, encryptionKey);
+        final String beaconChildClientId = decryptUserData(
+                AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_KEY, encryptionKey);
+        final String refreshClientId = isMissing(beaconChildClientId)
+                ? clientId
+                : beaconChildClientId;
+        final String userId = decryptUserData(AuthenticatorService.KEY_USER_ID, encryptionKey);
+        final String orgId = decryptUserData(AuthenticatorService.KEY_ORG_ID, encryptionKey);
+        final String tokenType = decryptUserData(AuthenticatorService.KEY_TOKEN_TYPE, encryptionKey);
+        final String credentialsIdentifier = decryptUserData(
+                AuthenticatorService.KEY_CREDENTIALS_IDENTIFIER, encryptionKey);
+
+        return accountExists()
+                && !isMissing(authToken)
+                && !isMissing(instanceUrl)
+                && !isMissing(loginUrl)
+                && !isMissing(refreshClientId)
+                && !isMissing(userId)
+                && !isMissing(orgId)
+                && !isMissing(refreshToken)
+                && Objects.equals(userId, expectedUser.getUserId())
+                && Objects.equals(orgId, expectedUser.getOrgId())
+                && Objects.equals(authToken, expectedUser.getAuthToken())
+                && Objects.equals(refreshToken, expectedUser.getRefreshTokenForPersistence())
+                && Objects.equals(instanceUrl, expectedUser.getInstanceServer())
+                && Objects.equals(loginUrl, expectedUser.getLoginServer())
+                && Objects.equals(refreshClientId, expectedUser.getClientIdForRefresh())
+                && Objects.equals(tokenType, expectedUser.getTokenType())
+                && Objects.equals(credentialsIdentifier, expectedUser.getCredentialsIdentifier());
+    }
+
+    @Nullable
+    private String decryptUserData(@NonNull String key, @NonNull String encryptionKey) {
+        return SalesforceSDKManager.decrypt(accountManager.getUserData(account, key), encryptionKey);
     }
 
     private static boolean isMissing(@Nullable String value) {
@@ -494,6 +547,7 @@ public class ClientManager {
             String newInstanceUrl = null;
             String newTokenType = null;
 
+            UserAccount requestUser = null;
             try {
                 /*
                  * Recheck-under-lock guardrail. We hold the per-account refresh slot, but the
@@ -509,12 +563,12 @@ public class ClientManager {
                  * caller's replayed request 401s again and the next getNewAuthToken() — now holding
                  * the latest tokens — performs a real refresh (self-correcting, never a loop).
                  */
+                requestUser = clientManager.getValidatedUser(/* requireRefreshFields = */ true);
+                if (requestUser == null) {
+                    return null;
+                }
                 if (lastNewAuthToken != null) {
-                    final UserAccount currentAccount =
-                            clientManager.getValidatedUser(/* requireRefreshFields = */ true);
-                    if (currentAccount == null) {
-                        return null;
-                    }
+                    final UserAccount currentAccount = requestUser;
                     final String storedAuthToken = currentAccount.getAuthToken();
                     final String storedRefreshToken = currentAccount.getRefreshTokenForPersistence();
                     final boolean haveLatestTokens = Objects.equals(
@@ -532,11 +586,6 @@ public class ClientManager {
                     }
                 }
 
-                final UserAccount requestUser =
-                        clientManager.getValidatedUser(/* requireRefreshFields = */ true);
-                if (requestUser == null) {
-                    return null;
-                }
                 // Refresh with the live persisted token, not this provider's construction-time
                 // snapshot. Another provider may already have rotated it; posting that stale
                 // snapshot would produce invalid_grant and could spuriously log the user out.
@@ -553,8 +602,7 @@ public class ClientManager {
                 newInstanceUrl = userAccount.getInstanceServer();
                 newTokenType = userAccount.getTokenType();
 
-                if (clientManager.getValidatedUser(
-                        /* requireRefreshFields = */ false) == null) {
+                if (!clientManager.isBoundAccountCurrent(userAccount)) {
                     newAuthToken = null;
                     newInstanceUrl = null;
                     newTokenType = null;
@@ -601,8 +649,7 @@ public class ClientManager {
                 }
 
                 // Account removal or malformed persisted data suppresses every local side effect.
-                if (clientManager.getValidatedUser(
-                        /* requireRefreshFields = */ false) == null) {
+                if (requestUser == null || !clientManager.isBoundAccountCurrent(requestUser)) {
                     return null;
                 }
 
@@ -766,10 +813,9 @@ public class ClientManager {
                         .populateFromTokenEndpointResponse(tr)
                         .build();
 
-                // Confirm that the account still exists and can be rebuilt immediately before and
-                // after persistence. Token-generation comparisons are handled separately.
-                if (clientManager.getValidatedUser(
-                        /* requireRefreshFields = */ false) == null) {
+                // Confirm that the bound account still has the request generation immediately
+                // before persistence and the refreshed generation immediately afterward.
+                if (!clientManager.isBoundAccountCurrent(originalUserAccount)) {
                     return null;
                 }
 
@@ -787,8 +833,7 @@ public class ClientManager {
                 }
 
                 UserAccountManager.getInstance().updateAccount(account, updatedUserAccount);
-                if (clientManager.getValidatedUser(
-                        /* requireRefreshFields = */ false) == null) {
+                if (!clientManager.isBoundAccountCurrent(updatedUserAccount)) {
                     return null;
                 }
                 updatedUserAccount.downloadProfilePhoto();

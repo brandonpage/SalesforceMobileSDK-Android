@@ -214,6 +214,50 @@ public class ClientManagerTest {
         Assert.assertEquals(userA.getRefreshToken(), provider.getRefreshToken());
     }
 
+    @Test
+    public void testAccountValidationPerformance() {
+        createTestAccountInAccountManager();
+        final UserAccount user = clientManager.getValidatedUser(true);
+        Assert.assertNotNull(user);
+        final int iterations = 200;
+
+        for (int i = 0; i < 20; i++) {
+            clientManager.getValidatedUser(true);
+            clientManager.isBoundAccountCurrent(user);
+        }
+
+        final long fullStart = System.nanoTime();
+        for (int i = 0; i < iterations; i++) {
+            Assert.assertNotNull(clientManager.getValidatedUser(true));
+        }
+        final long fullNanos = System.nanoTime() - fullStart;
+
+        final long generationStart = System.nanoTime();
+        for (int i = 0; i < iterations; i++) {
+            Assert.assertTrue(clientManager.isBoundAccountCurrent(user));
+        }
+        final long generationNanos = System.nanoTime() - generationStart;
+
+        System.out.println("ACCOUNT_VALIDATION_BENCHMARK iterations=" + iterations
+                + " full_ns=" + fullNanos
+                + " generation_ns=" + generationNanos
+                + " speedup=" + ((double) fullNanos / generationNanos));
+    }
+
+    @Test
+    public void testBoundAccountCurrentRejectsChangedCredentialGeneration() {
+        createTestAccountInAccountManager();
+        final UserAccount user = clientManager.getValidatedUser(true);
+        Assert.assertNotNull(user);
+        Assert.assertTrue(clientManager.isBoundAccountCurrent(user));
+
+        final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
+        accountManager.setPassword(clientManager.getAccount(),
+                SalesforceSDKManager.encrypt("newer-refresh-token", encryptionKey));
+
+        Assert.assertFalse(clientManager.isBoundAccountCurrent(user));
+    }
+
     /** Missing required identifiers leave the manager unbound without throwing. */
     @Test
     public void testConstructorWithIncompleteIdentityIsUnbound() {

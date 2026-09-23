@@ -170,6 +170,7 @@ class ClientManagerMockTest {
         }
         assertEquals(REFRESHED_ACCESS_TOKEN, userSlot.captured.authToken)
         assertEquals(ACCESS_TOKEN_REFRESH_INTENT, broadcastIntentSlot.captured.action)
+        verify(exactly = 3) { mockClientManager.getValidatedUser(any()) }
     }
 
     @Test
@@ -987,6 +988,43 @@ class ClientManagerMockTest {
     }
 
     @Test
+    fun testGetNewAuthToken_CredentialsAdvanceDuringRefresh_DiscardsStaleResponse() {
+        val fixture = boundFixture()
+        val requestStarted = CountDownLatch(1)
+        val releaseResponse = CountDownLatch(1)
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } returns mockk<Call> {
+                every { execute() } answers {
+                    requestStarted.countDown()
+                    releaseResponse.await(5, TimeUnit.SECONDS)
+                    successResponse(ROTATED_REFRESH_TOKEN)
+                }
+            }
+        }
+        val result = AtomicReference<String?>()
+        val refreshThread = Thread {
+            result.set(ClientManager.AccMgrAuthTokenProvider(fixture.manager).getNewAuthToken())
+        }
+
+        refreshThread.start()
+        assertTrue(requestStarted.await(5, TimeUnit.SECONDS))
+        fixture.liveUser.set(testUser(
+            authToken = "newer-access-token",
+            refreshToken = "newer-refresh-token",
+        ))
+        releaseResponse.countDown()
+        refreshThread.join(TimeUnit.SECONDS.toMillis(5))
+
+        assertFalse("Refresh thread did not finish", refreshThread.isAlive)
+        assertNull(result.get())
+        verify(exactly = 0) {
+            mockUserAccountManager.updateAccount(any(), any())
+            mockSDKManager.logout(any(), any(), any(), any())
+            mockAppContext.sendBroadcast(any())
+        }
+    }
+
+    @Test
     fun testGetNewAuthToken_MissingPersistedRefreshToken_FailsBeforeNetwork() {
         listOf<String?>(null, "   ").forEachIndexed { index, refreshToken ->
             val fixture = boundFixture(
@@ -1479,9 +1517,11 @@ class ClientManagerMockTest {
             Bundle()
         }
         val managerA = ClientManager(accountManager, accountA)
+        val managerASpy = spyk(managerA)
+        every { managerASpy.isBoundAccountCurrent(any()) } returns true
 
         val providerWithBSnapshots = ClientManager.AccMgrAuthTokenProvider(
-            managerA,
+            managerASpy,
             userB.instanceServer,
             userB.authToken,
             userB.refreshTokenForPersistence,
@@ -1492,7 +1532,7 @@ class ClientManagerMockTest {
         assertEquals(REFRESHED_ACCESS_TOKEN, providerWithBSnapshots.getNewAuthToken())
 
         val providerWithNullSnapshots = ClientManager.AccMgrAuthTokenProvider(
-            managerA,
+            managerASpy,
             null,
             null,
             null,
@@ -1560,10 +1600,25 @@ class ClientManagerMockTest {
             liveUser.set(secondArg())
             Bundle()
         }
+        val manager = boundClientManager(account, arrayOf(account))
+        every { manager.isBoundAccountCurrent(any()) } answers {
+            val expected = firstArg<UserAccount>()
+            val stored = liveUser.get()
+            stored != null
+                    && stored.userId == expected.userId
+                    && stored.orgId == expected.orgId
+                    && stored.authToken == expected.authToken
+                    && stored.refreshTokenForPersistence == expected.refreshTokenForPersistence
+                    && stored.instanceServer == expected.instanceServer
+                    && stored.loginServer == expected.loginServer
+                    && stored.clientIdForRefresh == expected.clientIdForRefresh
+                    && stored.tokenType == expected.tokenType
+                    && stored.credentialsIdentifier == expected.credentialsIdentifier
+        }
         return BoundFixture(
             account,
             liveUser,
-            boundClientManager(account, arrayOf(account)),
+            manager,
         )
     }
 
@@ -1612,6 +1667,10 @@ class ClientManagerMockTest {
             } else {
                 user
             }
+        }
+        every { isBoundAccountCurrent(any()) } answers {
+            val stored = mockUserAccountManager.buildUserAccount(boundAccount)
+            stored != null
         }
         every { getBoundAccountCount() } returns accounts.size
     }
