@@ -65,17 +65,21 @@ for ((sample = 1; sample <= sample_count; sample++)); do
     deadline=$((SECONDS + 45))
     app_cold_start=""
     native_load=""
+    community_load=""
+    splash_load=""
     while ((SECONDS < deadline)); do
         adb -s "$serial" logcat -d -v epoch -s System.out:I '*:S' >"$log_path"
         app_cold_start="$(marker_duration AppColdStart "$log_path")"
         native_load="$(marker_duration NativeLoad "$log_path")"
-        if [[ -n "$app_cold_start" && -n "$native_load" ]]; then
+        community_load="$(marker_duration CommunityLoad "$log_path")"
+        splash_load="$(marker_duration SplashLoad "$log_path")"
+        if [[ -n "$app_cold_start" && -n "$native_load" && -n "$community_load" && -n "$splash_load" ]]; then
             break
         fi
         sleep 0.25
     done
 
-    if [[ -z "$app_cold_start" || -z "$native_load" ]]; then
+    if [[ -z "$app_cold_start" || -z "$native_load" || -z "$community_load" || -z "$splash_load" ]]; then
         printf 'Timed out waiting for Publisher markers in sample %s\n' "$sample" >&2
         exit 1
     fi
@@ -85,8 +89,6 @@ for ((sample = 1; sample <= sample_count; sample++)); do
         exit 1
     fi
 
-    community_load="$(marker_duration CommunityLoad "$log_path")"
-    splash_load="$(marker_duration SplashLoad "$log_path")"
     printf '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' \
         "$version_label" "$sample" "$app_cold_start" "$native_load" \
         "$community_load" "$splash_load" "$total_time" "$wait_time" \
