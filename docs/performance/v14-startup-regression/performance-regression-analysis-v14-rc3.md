@@ -18,6 +18,8 @@ An authenticated Publisher APK A/B on the Galaxy S25 Ultra then reproduced the p
 
 An identical Publisher-shaped sample app then changed only the Mobile SDK dependency. On the same S25 Ultra, 13.2.1 -> 14.0.0 moved Android `TotalTime` from 100 to 106 ms, authenticated session bootstrap from 18 to 23 ms, and client-ready time from process start from 43 to 48 ms. This confirms a 5-6 ms SDK-only effect under the relevant custom-manager/account topology, but leaves nearly all of Publisher's +191 ms `NativeLoad` delta unexplained. The sample does not yet issue Publisher's gating auth-config request and is a seven-run triage series, not a release gate. Full results are in [`sdk-only-sample-performance-measurements-galaxy-s25-ultra.md`](sdk-only-sample-performance-measurements-galaxy-s25-ultra.md).
 
+The exact historical `13.0.2.10-publisher-internal` artifact was effectively flat with an adjacent 13.2.1 rerun in that sample: 99 -> 102 ms Android `TotalTime`, 18 -> 19 ms bootstrap, and 41 -> 43 ms client-ready. A direct same-source Publisher build pair then changed only the locked SDK graph. Its guest `NativeLoad` result was 329 ms for the first 13.2.1 baseline, 338 ms for RC3, and 323 ms for a reverse baseline, placing the common-path penalty at 9-15 ms. The authenticated direct Publisher run remains pending a Publisher-authorized account; guest results do not exercise the account/RTR path. Details are in [`publisher-sdk-only-performance-measurements-galaxy-s25-ultra.md`](publisher-sdk-only-performance-measurements-galaxy-s25-ultra.md).
+
 For one authenticated account and no application-defined extra OAuth fields, static call-path analysis finds:
 
 | Path | v13.2.1 synchronous `AccountManager` operations | RC3 operations | Measured context |
@@ -46,6 +48,8 @@ The separate APK/Dex dependency investigation has been moved to [`binary-footpri
 - Ran matched component and lifecycle benchmarks from both endpoints on a physical Pixel 8 Pro and Galaxy S25 Ultra; full results are in [`performance-measurements-pixel8pro.md`](performance-measurements-pixel8pro.md) and [`performance-measurements-galaxy-s25-ultra.md`](performance-measurements-galaxy-s25-ultra.md).
 - Ran five authenticated force-stop Publisher cold launches per APK on the Galaxy S25 Ultra, using Publisher's own `NativeLoad` and `AppColdStart` markers.
 - Ran seven authenticated force-stop launches per endpoint in an identical Publisher-shaped sample app, changing only Mobile SDK 13.2.1 versus 14.0.0.
+- Bridged the exact internal 13.0.2 Publisher SDK to public 13.2.1 with seven authenticated force-stop launches per endpoint in the same sample.
+- Built current Publisher source twice with only the locked SDK graph changed from 13.2.1 to RC3, then completed guest baseline/candidate/reverse-baseline validation. The authenticated cell awaits a Publisher-authorized account.
 
 Current `dev` is two commits past tag `v14.0.0-rc.3` (`863835e9a`). The Android SDK differences after RC3 are version-string changes; the shared submodule changes are also generated version-string updates. The analyzed startup behavior is therefore representative of RC3.
 
@@ -367,7 +371,7 @@ Binary-footprint changes and artifact-size gates remain in the separate footprin
 
 **Medium confidence:** the exact share attributable to each SDK or Publisher path. Both devices confirm the account paths, but their absolute component deltas differ by several multiples. The authenticated Publisher reproduction shows that the known account/User-Agent work explains only about 5.9% of its local Native Load shift, and the identical sample measured only 5-6 ms when changing the SDK alone. No Perfetto trace or instrumented call counter was captured from the Publisher APK run.
 
-**Not yet established:** which Publisher application, dependency, scheduling, or integration changes account for the remaining product delta; whether the internal `13.0.2.10-publisher-internal` baseline differs materially from public 13.2.1; and how much the proposed 14.0.1 patch will recover in the complete app. A same-source Publisher dependency A/B and traces across the localized early interval are required before attributing that residual.
+**Not yet established:** which Publisher application, dependency, scheduling, or integration changes account for the remaining product delta, and how much the proposed 14.0.1 patch will recover in the complete app. The internal `13.0.2.10-publisher-internal` baseline is now confirmed effectively flat with public 13.2.1 in the isolated sample. The same-source Publisher dependency A/B is built and guest-validated, but its authenticated cell and traces across the localized early interval are still required before attributing the residual.
 
 ## Reproduction notes
 

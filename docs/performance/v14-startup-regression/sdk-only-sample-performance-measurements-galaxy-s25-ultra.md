@@ -39,6 +39,22 @@ All measured samples ended at Android thermal status 0. Battery temperature stay
 
 Sanitized samples are in [`results/sdk-sample-13.2.1.csv`](results/sdk-sample-13.2.1.csv) and [`results/sdk-sample-14.0.0.csv`](results/sdk-sample-14.0.0.csv). The exact force-stop harness is [`run_sdk_sample_cold_start_benchmark.sh`](run_sdk_sample_cold_start_benchmark.sh).
 
+## Historical Publisher SDK bridge
+
+Publisher 262.010 used the internal `13.0.2.10-publisher-internal` artifact rather than public 13.2.1. The exact internal artifact was therefore run in the same authenticated sample, followed immediately by a fresh 13.2.1 series.
+
+| Measurement | 13.0.2.10 P50 | Adjacent 13.2.1 P50 | Change | 13.0.2.10 range | 13.2.1 range |
+|---|---:|---:|---:|---:|---:|
+| Android `am start -W` `TotalTime` | 99 ms | 102 ms | +3 ms | 91-102 ms | 96-107 ms |
+| Publisher-shaped authenticated session bootstrap | 18 ms | 19 ms | +1 ms | 15-19 ms | 16-20 ms |
+| Authenticated client ready from process start | 41 ms | 43 ms | +2 ms | 38-44 ms | 39-44 ms |
+| SDK initialization | 3 ms | 3 ms | 0 ms | 3-3 ms | 2-4 ms |
+| SDK-owned activity resume section | 3 ms | 4 ms | +1 ms | 3-4 ms | 3-4 ms |
+
+All fourteen launches ended at thermal status 0, with battery temperature between 28.8 C and 29.2 C. The account was authenticated once outside the timed series because the historical-version boundary required setup; authentication itself was not measured.
+
+This closes the baseline-version question for the isolated SDK experiment. The internal 13.0.2 artifact is effectively flat with public 13.2.1 at these boundaries and cannot conceal the roughly 190 ms Publisher `NativeLoad` shift. Sanitized samples are in [`results/sdk-sample-13.0.2.10-publisher-internal.csv`](results/sdk-sample-13.0.2.10-publisher-internal.csv) and [`results/sdk-sample-13.2.1-bridge-rerun.csv`](results/sdk-sample-13.2.1-bridge-rerun.csv).
+
 ## Controlled design
 
 The experiment used one source tree, package name, signing identity, authenticated account, build type, Android Gradle Plugin, Kotlin version, application-owned direct dependencies, compile/target SDK, and device. Only the locally published Mobile SDK dependency changed; its transitive dependency graph changed with it and is part of the SDK-level effect being measured.
@@ -71,12 +87,11 @@ The sample activity extends `SalesforceActivity` so it can expose the SDK lifecy
 
 The sample does not issue Publisher's gating auth-configuration request through `HttpAccess.DEFAULT`, and therefore does not include the generic User-Agent account lookup previously measured at approximately +3.62 ms on this S25 Ultra. Adding that cumulative cost to the +5 ms bootstrap remains far below the +191 ms Publisher `NativeLoad` delta, although concurrency means the two costs cannot be added as guaranteed wall time.
 
-This is a seven-sample triage series, not a release gate. It does not provide a stable P95, independent install cohorts, or counterbalanced AB/BA evidence. It also compares public 13.2.1 with 14.0.0, whereas the historical Publisher baseline uses `13.0.2.10-publisher-internal`.
+Each endpoint result is a seven-sample triage series, not a release gate. It does not provide a stable P95, independent install cohorts, or fully counterbalanced AB/BA evidence. The historical Publisher SDK baseline has now been bridged directly to 13.2.1 and was effectively flat in this sample.
 
 ## Next attribution cells
 
-1. Add `13.0.2.10-publisher-internal` to this identical sample to bridge Publisher's actual historical SDK baseline to public 13.2.1.
-2. Run the same current Publisher source and build graph twice while changing only the SDK dependency. This is now the highest-value test because the controlled sample leaves nearly all of the product delta unexplained.
-3. Add exact synchronous trace sections around Publisher's `ProcessCreated` to `IsCommunitySelected` interval, especially dependency injection, coroutine scheduling, event storage, and the gating auth-config request.
-4. Add the proposed 14.0.1 correctness-preserving account patch as a fourth sample cell to measure its attainable improvement rather than inferring it from operation counts.
-5. Before a release decision, counterbalance endpoint order across independent install cohorts and collect enough samples for confidence intervals and P95.
+1. Complete the same-source Publisher SDK-only A/B with a Publisher-authorized authenticated account. The build pair and guest validation are complete; details are in [`publisher-sdk-only-performance-measurements-galaxy-s25-ultra.md`](publisher-sdk-only-performance-measurements-galaxy-s25-ultra.md).
+2. Add exact synchronous trace sections around Publisher's `ProcessCreated` to `IsCommunitySelected` interval, especially dependency injection, coroutine scheduling, event storage, and the gating auth-config request.
+3. Add the proposed 14.0.1 correctness-preserving account patch as another sample cell to measure its attainable improvement rather than inferring it from operation counts.
+4. Before a release decision, counterbalance endpoint order across independent install cohorts and collect enough samples for confidence intervals and P95.

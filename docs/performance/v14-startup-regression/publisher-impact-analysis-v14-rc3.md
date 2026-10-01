@@ -216,7 +216,11 @@ The first attribution cell used one identical Publisher-shaped app source tree a
 
 The authenticated session bootstrap moved from 18 to 23 ms P50 (+5 ms), client-ready time from process start moved from 43 to 48 ms (+5 ms), and Android `TotalTime` moved from 100 to 106 ms (+6 ms). All samples ended at thermal status 0. This confirms a small SDK-only regression but does not approach Publisher's +191 ms `NativeLoad` result. The app intentionally exposes a `SalesforceActivity` lifecycle marker that Publisher does not use, and it does not yet issue Publisher's gating auth-config request, so those boundaries are diagnostic rather than exact Publisher marker equivalents.
 
-The controlled result makes a same-source Publisher dependency A/B the highest-value next test. The remaining SDK cells are Publisher's actual `13.0.2.10-publisher-internal` baseline and the proposed 14.0.1 patch. The historical Publisher product A/B remains a separate row because it includes all intervening application and dependency changes. Full setup, raw samples, and limitations are in [`sdk-only-sample-performance-measurements-galaxy-s25-ultra.md`](sdk-only-sample-performance-measurements-galaxy-s25-ultra.md).
+The exact `13.0.2.10-publisher-internal` artifact was then run in the same authenticated sample and was effectively flat with an adjacent 13.2.1 rerun: 99 -> 102 ms Android `TotalTime`, 18 -> 19 ms session bootstrap, and 41 -> 43 ms client-ready time. This closes the historical SDK bridge without revealing a missing large regression.
+
+A same-source Publisher SDK-only build pair is also complete. Guest validation measured `NativeLoad` at 329 ms on the first 13.2.1 baseline, 338 ms on RC3, and 323 ms on a reverse 13.2.1 baseline, for a 9-15 ms RC3 separation. The authenticated cell is still required because the guest run does not execute the account paths under investigation; the generic SDK test account was not authorized for Publisher's dev community. Full setup and samples are in [`publisher-sdk-only-performance-measurements-galaxy-s25-ultra.md`](publisher-sdk-only-performance-measurements-galaxy-s25-ultra.md).
+
+The remaining SDK cells are the authenticated direct Publisher comparison and the proposed 14.0.1 patch. The historical Publisher product A/B remains a separate row because it includes all intervening application and dependency changes. Full isolated-sample setup, raw samples, and limitations are in [`sdk-only-sample-performance-measurements-galaxy-s25-ultra.md`](sdk-only-sample-performance-measurements-galaxy-s25-ultra.md).
 
 ## Measurement method and limitations
 
@@ -230,3 +234,4 @@ The controlled result makes a same-source Publisher dependency A/B the highest-v
 - Full S25 distributions and run conditions are in [`performance-measurements-galaxy-s25-ultra.md`](performance-measurements-galaxy-s25-ultra.md).
 - Full Publisher product samples and derived marker intervals are in [`publisher-performance-measurements-galaxy-s25-ultra.md`](publisher-performance-measurements-galaxy-s25-ultra.md).
 - The identical-app SDK dependency A/B is in [`sdk-only-sample-performance-measurements-galaxy-s25-ultra.md`](sdk-only-sample-performance-measurements-galaxy-s25-ultra.md).
+- The direct same-source Publisher SDK-only A/B is in [`publisher-sdk-only-performance-measurements-galaxy-s25-ultra.md`](publisher-sdk-only-performance-measurements-galaxy-s25-ultra.md).

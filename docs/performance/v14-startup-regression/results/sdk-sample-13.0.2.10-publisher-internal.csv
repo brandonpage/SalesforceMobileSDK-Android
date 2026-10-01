@@ -1,0 +1,8 @@
+version,iteration,total_time_ms,wait_time_ms,sdk_init_ms,publisher_bootstrap_ms,client_ready_process_ms,resume_ms,battery_temp_c,thermal_status
+13.0.2.10-publisher-internal,1,102,104,3,19,44,3,28.8,0
+13.0.2.10-publisher-internal,2,97,98,3,18,41,3,28.9,0
+13.0.2.10-publisher-internal,3,96,98,3,16,39,3,28.9,0
+13.0.2.10-publisher-internal,4,99,101,3,16,40,3,28.9,0
+13.0.2.10-publisher-internal,5,91,93,3,15,38,3,29.0,0
+13.0.2.10-publisher-internal,6,99,101,3,18,42,4,29.0,0
+13.0.2.10-publisher-internal,7,101,103,3,18,41,3,29.0,0

@@ -85,12 +85,15 @@ The sample held source, package, signing identity, authenticated account, toolch
 
 This establishes a 5-6 ms SDK-only effect, not a roughly 190 ms one. The sample omits Publisher's gating auth-config request, whose generic User-Agent cost was independently measured at about +3.62 ms on this device, but even the broader account/User-Agent estimate remains far below the product delta. Full samples and limitations are in [`sdk-only-sample-performance-measurements-galaxy-s25-ultra.md`](sdk-only-sample-performance-measurements-galaxy-s25-ultra.md).
 
+The exact `13.0.2.10-publisher-internal` artifact has since been bridged to public 13.2.1 in the identical authenticated sample. It was effectively flat: 99 -> 102 ms Android launch time, 18 -> 19 ms session bootstrap, and 41 -> 43 ms client-ready time. This rules out the historical SDK-version gap as the source of the missing product delta.
+
+A direct same-source Publisher build pair has also been produced for 13.2.1 and RC3. Its guest validation measured `NativeLoad` at 329 ms for the first baseline, 338 ms for RC3, and 323 ms for the reverse baseline, placing the guest RC3 penalty at 9-15 ms. The authenticated run is pending an account authorized for Publisher's dev community. Full setup and sanitized samples are in [`publisher-sdk-only-performance-measurements-galaxy-s25-ultra.md`](publisher-sdk-only-performance-measurements-galaxy-s25-ultra.md).
+
 Remaining high-value cells:
 
-1. Publisher's actual baseline SDK, `13.0.2.10-publisher-internal`.
-2. The same current Publisher source built against public `13.2.1` and final `14.0.0`, changing only the SDK dependency.
-3. The proposed 14.0.1 account-path patch in the identical sample and, if compatible, Publisher.
+1. The authenticated same-source Publisher comparison using the completed 13.2.1 and RC3 build pair.
+2. The proposed 14.0.1 account-path patch in the identical sample and, if compatible, Publisher.
 
 Use one authenticated account and the same force-stop loop. Add trace sections or explicit timestamps for application initialization, current-user resolution, the first client, Publisher's auth-config request, and exact Publisher marker boundaries. A short run is enough for triage if the phase remains stable; use a larger counterbalanced series for a release decision.
 
-The first result selects the second interpretation from the original plan: most of the Publisher regression comes from application/dependency integration outside the already benchmarked account calls. The `13.0.2.10-publisher-internal` bridge is still required to determine whether some of the historical product shift predates public 13.2.1.
+The completed sample and historical bridge make the application/dependency integration explanation stronger: neither the measured SDK-only 13.2.1 -> 14.0 effect nor the 13.0.2 -> 13.2.1 gap approaches the product regression. The authenticated direct Publisher cell remains necessary because it is the only controlled experiment that combines the complete Publisher startup graph with the changed SDK.

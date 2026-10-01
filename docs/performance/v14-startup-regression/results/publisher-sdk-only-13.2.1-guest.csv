@@ -1,0 +1,6 @@
+version,sample,app_cold_start_ms,native_load_ms,community_load_ms,splash_load_ms,am_total_time_ms,am_wait_time_ms,battery_temp_tenths_c,thermal_status,authenticated
+publisher-msdk-13.2.1-guest,1,2479,329,2148,2059,823,825,298,0,false
+publisher-msdk-13.2.1-guest,2,2139,324,1814,1726,820,821,297,0,false
+publisher-msdk-13.2.1-guest,3,2326,334,1991,1907,827,828,297,0,false
+publisher-msdk-13.2.1-guest,4,2083,326,1757,1673,832,833,300,0,false
+publisher-msdk-13.2.1-guest,5,2119,330,1788,1697,830,832,300,0,false
