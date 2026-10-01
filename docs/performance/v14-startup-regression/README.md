@@ -8,7 +8,7 @@ This directory preserves the analysis, physical-device measurements, and reprodu
 - On a Galaxy S25 Ultra, an authenticated Publisher A/B reproduced the reported `NativeLoad` regression: 329 ms to 520 ms (+191 ms / +58.1%).
 - An identical Publisher-shaped sample app changing only Mobile SDK 13.2.1 to 14.0.0 measured 100 -> 106 ms Android launch time and 18 -> 23 ms authenticated session bootstrap. This SDK-only 5-6 ms shift is far smaller than Publisher's +191 ms `NativeLoad` result.
 - The exact historical Publisher SDK, `13.0.2.10-publisher-internal`, was effectively flat with public 13.2.1 in the same authenticated sample: 99 -> 102 ms Android launch time and 18 -> 19 ms bootstrap. The historical SDK version gap does not hide the missing product delta.
-- A direct same-source Publisher build changed only the locked SDK graph from 13.2.1 to RC3. Guest `NativeLoad` showed a 9-15 ms RC3 penalty across the initial and reverse baselines; the authenticated cell is pending a Publisher-authorized account.
+- A direct same-source Publisher A-B-A-B changed only the locked SDK graph from 13.2.1 to RC3. Authenticated `NativeLoad` moved only 465 -> 471.5 ms (+6.5 ms / +1.4%), but `AppColdStart` moved 2,954 -> 3,374 ms (+420 ms / +14.2%). The changed SDK graph reproduces the overall cold magnitude in a later page-loading phase, not the reported native phase.
 - The broader Publisher-eligible account and User-Agent paths isolated on that device expose approximately 11.18 ms of cumulative work, or 5.9% of the reproduced `NativeLoad` change.
 - The recommended 14.0.1 work removes duplicate hydration while retaining immediate feature availability, exact-account binding, live RTR credential reads, refresh coordination, and logout/relogin race protection.
 
@@ -22,7 +22,7 @@ Start with [performance-regression-analysis-v14-rc3.md](performance-regression-a
 - `publisher-impact-analysis-v14-rc3.md`: mapping of the confirmed SDK paths into Publisher's startup graph.
 - `publisher-performance-measurements-galaxy-s25-ultra.md`: authenticated Publisher force-stop reproduction.
 - `sdk-only-sample-performance-measurements-galaxy-s25-ultra.md`: controlled identical-app dependency A/B.
-- `publisher-sdk-only-performance-measurements-galaxy-s25-ultra.md`: direct same-source Publisher SDK-only A/B, with guest validation and authenticated-test status.
+- `publisher-sdk-only-performance-measurements-galaxy-s25-ultra.md`: authenticated and guest direct same-source Publisher SDK-only A/B.
 - `binary-footprint-analysis-v14.md`: separate APK/Dex dependency analysis.
 - `run_android_cold_start_benchmark.sh`: synthetic-account SDK cold-start harness.
 - `run_publisher_cold_start_benchmark.sh`: Publisher telemetry-marker harness.

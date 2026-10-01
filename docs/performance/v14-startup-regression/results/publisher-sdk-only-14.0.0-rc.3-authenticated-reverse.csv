@@ -1,0 +1,4 @@
+version,sample,app_cold_start_ms,native_load_ms,community_load_ms,splash_load_ms,am_total_time_ms,am_wait_time_ms,battery_temp_tenths_c,thermal_status,authenticated
+publisher-msdk-14.0.0-rc.3-authenticated-reverse,1,3432,475,2942,2886,902,902,299,0,true
+publisher-msdk-14.0.0-rc.3-authenticated-reverse,2,3728,480,3234,3191,907,909,301,0,true
+publisher-msdk-14.0.0-rc.3-authenticated-reverse,3,2963,470,2481,2435,884,886,301,0,true
