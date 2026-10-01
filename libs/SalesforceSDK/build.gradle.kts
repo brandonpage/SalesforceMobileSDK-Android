@@ -72,7 +72,8 @@ android { // TODO: This cannot be resolved until newDSL=true
 
     buildTypes {
         debug {
-            enableAndroidTestCoverage = true
+            // Keep the device performance harness free of JaCoCo instrumentation overhead.
+            enableAndroidTestCoverage = false
         }
     }
 

@@ -26,13 +26,45 @@
  */
 package com.salesforce.androidsdk;
 
-import android.app.Activity;
+import android.os.Debug;
+import android.os.SystemClock;
+import android.util.Log;
+
+import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.ui.SalesforceActivity;
 
 /**
  * Mock main activity.
  *
  * @author bhariharan
  */
-public class MainActivity extends Activity {
+public class MainActivity extends SalesforceActivity {
 
+    private static final String PERF_TAG = "MSDK_PERF";
+    private static volatile long lastResumeWallNanos;
+    private static volatile long lastResumeCpuNanos;
+
+    @Override
+    public void onResume() {
+        final long cpuStart = Debug.threadCpuTimeNanos();
+        final long wallStart = SystemClock.elapsedRealtimeNanos();
+        super.onResume();
+        lastResumeWallNanos = SystemClock.elapsedRealtimeNanos() - wallStart;
+        lastResumeCpuNanos = Debug.threadCpuTimeNanos() - cpuStart;
+        Log.i(PERF_TAG, "activity_on_resume wall_us=" + (lastResumeWallNanos / 1000.0)
+                + " cpu_us=" + (lastResumeCpuNanos / 1000.0));
+    }
+
+    public static long getLastResumeWallNanos() {
+        return lastResumeWallNanos;
+    }
+
+    public static long getLastResumeCpuNanos() {
+        return lastResumeCpuNanos;
+    }
+
+    @Override
+    public void onResume(RestClient client) {
+        // The benchmark intentionally performs no rendering or network I/O after client creation.
+    }
 }

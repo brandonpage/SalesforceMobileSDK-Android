@@ -1,0 +1,6 @@
+version,sample,app_cold_start_ms,native_load_ms,community_load_ms,splash_load_ms,am_total_time_ms,am_wait_time_ms,battery_temp_tenths_c,thermal_status
+publisher-262.010,1,3787,331,3451,3439,533,534,262,unavailable
+publisher-262.010,2,3319,327,2986,2971,535,537,263,unavailable
+publisher-262.010,3,3863,329,3531,3515,538,539,264,unavailable
+publisher-262.010,4,3598,334,3260,3244,541,542,266,unavailable
+publisher-262.010,5,3146,329,2811,2797,534,536,267,unavailable
