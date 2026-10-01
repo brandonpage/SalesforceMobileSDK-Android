@@ -1,0 +1,8 @@
+version,iteration,total_time_ms,wait_time_ms,sdk_init_ms,publisher_bootstrap_ms,client_ready_process_ms,resume_ms,battery_temp_c,thermal_status
+13.2.1,1,98,100,4,17,44,2,29.6,0
+13.2.1,2,100,102,3,18,43,4,29.6,0
+13.2.1,3,98,100,3,18,43,4,29.6,0
+13.2.1,4,100,104,3,17,42,4,29.6,0
+13.2.1,5,100,101,3,19,43,3,29.6,0
+13.2.1,6,99,101,3,18,43,4,29.6,0
+13.2.1,7,103,105,3,17,41,3,29.7,0

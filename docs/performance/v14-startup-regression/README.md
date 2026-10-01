@@ -6,7 +6,8 @@ This directory preserves the analysis, physical-device measurements, and reprodu
 
 - Repeated synchronous `AccountManager` hydration is a real, correctness-preserving optimization opportunity, but it explains only part of the affected applications' startup regression.
 - On a Galaxy S25 Ultra, an authenticated Publisher A/B reproduced the reported `NativeLoad` regression: 329 ms to 520 ms (+191 ms / +58.1%).
-- The Publisher-eligible account and User-Agent paths isolated on that device account for approximately 11.18 ms, or 5.9%, of the reproduced `NativeLoad` change.
+- An identical Publisher-shaped sample app changing only Mobile SDK 13.2.1 to 14.0.0 measured 100 -> 106 ms Android launch time and 18 -> 23 ms authenticated session bootstrap. This SDK-only 5-6 ms shift is far smaller than Publisher's +191 ms `NativeLoad` result.
+- The broader Publisher-eligible account and User-Agent paths isolated on that device expose approximately 11.18 ms of cumulative work, or 5.9% of the reproduced `NativeLoad` change.
 - The recommended 14.0.1 work removes duplicate hydration while retaining immediate feature availability, exact-account binding, live RTR credential reads, refresh coordination, and logout/relogin race protection.
 
 Start with [performance-regression-analysis-v14-rc3.md](performance-regression-analysis-v14-rc3.md). The Publisher-specific attribution is in [publisher-impact-analysis-v14-rc3.md](publisher-impact-analysis-v14-rc3.md), and the complete local Publisher reproduction is in [publisher-performance-measurements-galaxy-s25-ultra.md](publisher-performance-measurements-galaxy-s25-ultra.md).
@@ -18,10 +19,12 @@ Start with [performance-regression-analysis-v14-rc3.md](performance-regression-a
 - `performance-measurements-galaxy-s25-ultra.md`: matched component measurements on Galaxy S25 Ultra.
 - `publisher-impact-analysis-v14-rc3.md`: mapping of the confirmed SDK paths into Publisher's startup graph.
 - `publisher-performance-measurements-galaxy-s25-ultra.md`: authenticated Publisher force-stop reproduction.
+- `sdk-only-sample-performance-measurements-galaxy-s25-ultra.md`: controlled identical-app dependency A/B.
 - `binary-footprint-analysis-v14.md`: separate APK/Dex dependency analysis.
 - `run_android_cold_start_benchmark.sh`: synthetic-account SDK cold-start harness.
 - `run_publisher_cold_start_benchmark.sh`: Publisher telemetry-marker harness.
-- `results/`: sanitized Publisher CSV samples, including the uncounted validation launches.
+- `run_sdk_sample_cold_start_benchmark.sh`: authenticated sample-app force-stop harness.
+- `results/`: sanitized Publisher and SDK-only sample CSVs.
 
 The Android-test changes on this branch are benchmark instrumentation, not proposed production changes. They make the test activity exercise `SalesforceActivity`, record the synchronous resume section, disable JaCoCo overhead, and add `AccountPathBenchmarkTest` for deterministic local accounts with no network requests.
 

@@ -210,11 +210,13 @@ The five-run S25 Ultra experiment reproduced the product delta: `NativeLoad` inc
 
 Five launches per build are sufficient to answer the triage question—whether a roughly +202 ms Native Load and +390 ms Cold shift is visible at all on the local device. They are not enough to certify a 10% release gate or characterize P95. The five observations within one install are also one correlated cohort, not five independent installs.
 
-### Stage 2: attribute the delta to Mobile SDK
+### Stage 2: attribute the delta to Mobile SDK — first controlled cell completed
 
-Stage 1 reproduced both direction and magnitude. The attribution experiment should now hold application source, build type, non-SDK dependencies, community, and account constant and change only the Mobile SDK dependency. Prefer building Publisher twice if the source is API-compatible. If that is impractical, use one identical Publisher-shaped app source tree that reproduces its custom `CommunitySDKManager` initialization, eleven `additionalOauthKeys`, cached `RestClient`, auth-configuration request through `HttpAccess.DEFAULT`, and exact marker boundaries.
+The first attribution cell used one identical Publisher-shaped app source tree and changed only the Mobile SDK dependency from public 13.2.1 to final 14.0.0. It reproduced Publisher's custom-manager-before-`initNative()` topology, eleven `additionalOauthKeys`, authenticated current-user resolution, and first cached client creation. Seven measured force-stop launches followed one unmeasured post-install launch for each endpoint on the S25 Ultra.
 
-A stock sample app is useful for confirming SDK mechanisms, but it cannot alone apportion the Publisher result: ordinary samples exercise `SalesforceActivityDelegate.onResume()` and base-manager feature hydration that Publisher bypasses, while omitting Publisher's startup concurrency and gating requests. The causal test should use identical app source with four SDK cells: Publisher's actual `13.0.2.10-publisher-internal` baseline, public `13.2.1`, 14.0 RC3/final, and the proposed 14.0.1 patch. The historical Publisher product A/B remains a separate row because it includes all intervening application and dependency changes.
+The authenticated session bootstrap moved from 18 to 23 ms P50 (+5 ms), client-ready time from process start moved from 43 to 48 ms (+5 ms), and Android `TotalTime` moved from 100 to 106 ms (+6 ms). All samples ended at thermal status 0. This confirms a small SDK-only regression but does not approach Publisher's +191 ms `NativeLoad` result. The app intentionally exposes a `SalesforceActivity` lifecycle marker that Publisher does not use, and it does not yet issue Publisher's gating auth-config request, so those boundaries are diagnostic rather than exact Publisher marker equivalents.
+
+The controlled result makes a same-source Publisher dependency A/B the highest-value next test. The remaining SDK cells are Publisher's actual `13.0.2.10-publisher-internal` baseline and the proposed 14.0.1 patch. The historical Publisher product A/B remains a separate row because it includes all intervening application and dependency changes. Full setup, raw samples, and limitations are in [`sdk-only-sample-performance-measurements-galaxy-s25-ultra.md`](sdk-only-sample-performance-measurements-galaxy-s25-ultra.md).
 
 ## Measurement method and limitations
 
@@ -227,3 +229,4 @@ A stock sample app is useful for confirming SDK mechanisms, but it cannot alone 
 - Synthetic accounts were removed from the device after collection.
 - Full S25 distributions and run conditions are in [`performance-measurements-galaxy-s25-ultra.md`](performance-measurements-galaxy-s25-ultra.md).
 - Full Publisher product samples and derived marker intervals are in [`publisher-performance-measurements-galaxy-s25-ultra.md`](publisher-performance-measurements-galaxy-s25-ultra.md).
+- The identical-app SDK dependency A/B is in [`sdk-only-sample-performance-measurements-galaxy-s25-ultra.md`](sdk-only-sample-performance-measurements-galaxy-s25-ultra.md).

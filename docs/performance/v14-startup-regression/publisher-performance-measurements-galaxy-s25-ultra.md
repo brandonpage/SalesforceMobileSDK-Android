@@ -71,23 +71,26 @@ Publisher marker timestamps narrow the deterministic shift to the early authenti
 
 The `IsCommunitySelected` event is stored and logged asynchronously, so the 252 ms interval is a localization clue rather than proof that the event call itself consumes that time. A Perfetto trace or synchronous trace sections are required to divide this interval among SDK initialization, activity construction/injection, coroutine scheduling, event storage, and Publisher work.
 
-## Value of the Mobile SDK sample-app A/B
+## Mobile SDK sample-app A/B result
 
-There is now substantial value in a controlled Mobile SDK sample-app experiment. The Publisher reproduction proves that the test apparatus and device can see the production-sized regression. The earlier S25 component harness measured only about +11 ms for the identified account paths, so it cannot by itself explain the reproduced +191 ms `NativeLoad` delta.
+The first controlled Mobile SDK sample-app experiment is complete. The Publisher reproduction proves that the test apparatus and device can see the production-sized regression; the identical-app SDK A/B then measured only a small fraction of it.
 
-The next experiment should use one identical sample-app source tree and change only the Mobile SDK dependency. Building the v13.2.1 sample tree and the v14 sample tree independently would reintroduce the same attribution problem as the Publisher comparison because application, Gradle, Kotlin, AndroidX, and other dependencies would all change.
+| Identical sample-app measurement | SDK 13.2.1 P50 | SDK 14.0.0 P50 | Change |
+|---|---:|---:|---:|
+| Android `am start -W` `TotalTime` | 100 ms | 106 ms | **+6 ms / +6.0%** |
+| Publisher-shaped authenticated session bootstrap | 18 ms | 23 ms | **+5 ms / +27.8%** |
+| Authenticated client ready from process start | 43 ms | 48 ms | **+5 ms / +11.6%** |
 
-Recommended cells:
+The sample held source, package, signing identity, authenticated account, toolchain, and application-owned direct dependencies constant. It installed a custom manager before `initNative()`, configured Publisher's eleven additional OAuth keys, and retained the same account across both builds. The SDK's transitive dependency graph was allowed to change because it is part of the SDK-level effect under test. Seven measured force-stop launches followed one unmeasured post-install launch per endpoint; every measured sample was at thermal status 0.
+
+This establishes a 5-6 ms SDK-only effect, not a roughly 190 ms one. The sample omits Publisher's gating auth-config request, whose generic User-Agent cost was independently measured at about +3.62 ms on this device, but even the broader account/User-Agent estimate remains far below the product delta. Full samples and limitations are in [`sdk-only-sample-performance-measurements-galaxy-s25-ultra.md`](sdk-only-sample-performance-measurements-galaxy-s25-ultra.md).
+
+Remaining high-value cells:
 
 1. Publisher's actual baseline SDK, `13.0.2.10-publisher-internal`.
-2. Public `13.2.1`, to bridge the current analysis baseline to Publisher's real baseline.
-3. `14.0.0-rc.3` or the final 14.0 dependency without any Publisher changes.
-4. The proposed 14.0.1 account-path patch.
+2. The same current Publisher source built against public `13.2.1` and final `14.0.0`, changing only the SDK dependency.
+3. The proposed 14.0.1 account-path patch in the identical sample and, if compatible, Publisher.
 
-Use one authenticated account and the same force-stop loop. Add trace sections or explicit timestamps for application initialization, `AppCreateComplete`, current-user resolution, the first `getRestClient()` callback, and first rendition. Five runs are enough for triage if the phase remains as stable as Publisher `NativeLoad`; use a larger counterbalanced series for a release decision.
+Use one authenticated account and the same force-stop loop. Add trace sections or explicit timestamps for application initialization, current-user resolution, the first client, Publisher's auth-config request, and exact Publisher marker boundaries. A short run is enough for triage if the phase remains stable; use a larger counterbalanced series for a release decision.
 
-Interpretation of that A/B will be decisive:
-
-- If the SDK-only app reproduces roughly +190 ms, the remaining work belongs primarily in Mobile SDK initialization/dependency analysis.
-- If it remains near the existing +11 ms component result, most of the Publisher regression comes from application/dependency integration outside the already benchmarked account calls.
-- If the 13.0.2-to-13.2.1 cell already moves materially, the report's older Publisher-specific baseline—not only v14—is part of the observed difference.
+The first result selects the second interpretation from the original plan: most of the Publisher regression comes from application/dependency integration outside the already benchmarked account calls. The `13.0.2.10-publisher-internal` bridge is still required to determine whether some of the historical product shift predates public 13.2.1.
