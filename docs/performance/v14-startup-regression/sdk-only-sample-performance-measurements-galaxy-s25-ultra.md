@@ -91,7 +91,7 @@ Each endpoint result is a seven-sample triage series, not a release gate. It doe
 
 ## Next attribution cells
 
-1. Isolate dependency bundles in the completed authenticated same-source Publisher A-B-A-B. The full SDK graph leaves `NativeLoad` nearly flat but adds approximately 420 ms after that boundary; details are in [`publisher-sdk-only-performance-measurements-galaxy-s25-ultra.md`](publisher-sdk-only-performance-measurements-galaxy-s25-ultra.md).
-2. Add exact synchronous trace sections and request timing from Publisher's `NativeLoad` through `CommunityLoad`, beginning with the networking stack.
+1. Trace the completed authenticated same-source Publisher A-B-A-B after `NativeLoad`. Per-launch subtraction shows a 406.5 ms candidate-associated post-native shift, but that interval includes WebView, server, and network variability; details are in [`publisher-sdk-only-performance-measurements-galaxy-s25-ultra.md`](publisher-sdk-only-performance-measurements-galaxy-s25-ultra.md).
+2. Only if the trace implicates a changed SDK-owned component, build a one-variable hybrid that holds SDK code constant and changes that dependency family alone.
 3. Add the proposed 14.0.1 correctness-preserving account patch as another sample cell to measure its attainable improvement rather than inferring it from operation counts.
 4. Before a release decision, counterbalance endpoint order across independent install cohorts and collect enough samples for confidence intervals and P95.
