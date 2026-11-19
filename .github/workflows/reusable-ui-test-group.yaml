@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   test-group:
-    name: UI Tests (${{ inputs.test_groups }})
+    name: ${{ inputs.test_groups }}
     runs-on: ubuntu-latest
     timeout-minutes: 240
     env:
