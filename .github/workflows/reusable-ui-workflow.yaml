@@ -89,7 +89,7 @@ jobs:
     # Nightly runs: reports on the results of the concurrent producer jobs. PR runs: runs the tests itself.
     needs: [nightly-regular-login-multi-user, nightly-regular-welcome-token-lifecycle, nightly-community, nightly-native-login]
     if: ${{ !cancelled() }}
-    runs-on: forcedotcom-ubuntu  # forks: use ubuntu-latest (org-scoped runner)
+    runs-on: ${{ github.repository_owner == 'forcedotcom' && 'forcedotcom-ubuntu' || 'ubuntu-latest' }}
     env:
       BUNDLE_GEMFILE: ${{ github.workspace }}/.github/DangerFiles/Gemfile
       # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
