@@ -27,8 +27,13 @@ end
 json_libs = modified_libs.map { |l| "'#{l}'"}.join(", ")
 `echo "libs=[#{json_libs}]" >> $GITHUB_OUTPUT`
 
-# Detect AuthFlowTester changes — if any, run the full UI suite instead of the fixed PR subset
+# Run the complete UI suite when AuthFlowTester code or its CI runner contract changes.
 authflowtester_changed = (git.modified_files + git.added_files).any? { |f|
-  f.start_with?("native/NativeSampleApps/AuthFlowTester/")
+  f.start_with?("native/NativeSampleApps/AuthFlowTester/") ||
+    [
+      ".github/test-shards/run-authflowtester-firebase-tests.sh",
+      ".github/workflows/reusable-ui-test-group.yaml",
+      ".github/workflows/reusable-ui-workflow.yaml",
+    ].include?(f)
 }
 `echo "run_all_ui_tests=#{authflowtester_changed}" >> $GITHUB_OUTPUT`
