@@ -35,7 +35,7 @@ permissions:
 jobs:
   test-group:
     name: ${{ inputs.display_name }}
-    runs-on: forcedotcom-ubuntu  # forks: use ubuntu-latest (org-scoped runner)
+    runs-on: ${{ github.repository_owner == 'forcedotcom' && 'forcedotcom-ubuntu' || 'ubuntu-latest' }}
     timeout-minutes: 240
     env:
       FULL_API_RANGE: ${{ inputs.api_levels }}

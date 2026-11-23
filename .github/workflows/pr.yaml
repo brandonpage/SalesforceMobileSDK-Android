@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   test-orchestrator:
-    runs-on: forcedotcom-ubuntu  # forks: use ubuntu-latest (org-scoped runner)
+    runs-on: ${{ github.repository_owner == 'forcedotcom' && 'forcedotcom-ubuntu' || 'ubuntu-latest' }}
     permissions:
       contents: read
       pull-requests: write

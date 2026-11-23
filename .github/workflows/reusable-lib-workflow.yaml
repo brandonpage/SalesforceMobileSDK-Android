@@ -23,7 +23,7 @@ permissions:
 jobs:
   test-android:
     name: ${{ inputs.lib }}
-    runs-on: forcedotcom-ubuntu  # forks: use ubuntu-latest (org-scoped runner)
+    runs-on: ${{ github.repository_owner == 'forcedotcom' && 'forcedotcom-ubuntu' || 'ubuntu-latest' }}
     env:
       BUNDLE_GEMFILE: ${{ github.workspace }}/.github/DangerFiles/Gemfile
       # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
