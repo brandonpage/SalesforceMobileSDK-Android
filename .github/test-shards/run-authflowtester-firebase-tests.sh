@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Fork-validation trigger: changes to this runner require all AuthFlowTester PR groups.
 
 set -euo pipefail
 
