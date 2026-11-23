@@ -41,9 +41,9 @@ are `request_user_agent_<seq>`.
 
 ## UI Test Coverage
 
-Tests are executed by GitHub Actions via `.github/workflows/reusable-ui-workflow.yaml` and run in [Firebase Test Lab](https://firebase.google.com/docs/test-lab) across all supported API levels using the AndroidX Test Orchestrator.
+Tests are executed by GitHub Actions via `.github/workflows/reusable-ui-workflow.yaml` and run in [Firebase Test Lab](https://firebase.google.com/docs/test-lab) across all supported API levels using the AndroidX Test Orchestrator. Nightly Firebase group selection is delegated to `.github/test-shards/run-authflowtester-firebase-tests.sh`; PR smoke and full-inventory group selection remain inline in `.github/workflows/reusable-ui-workflow.yaml`. The supported nightly groups and CI-only invocation requirements are documented in [`.github/test-shards/README.md`](../../../.github/test-shards/README.md).
 
-- **PR runs** — a representative smoke subset on one API level; AuthFlowTester-changing PRs run the complete inventory in five sequential groups.
+- **PR runs** — a representative smoke subset on one API level; AuthFlowTester-changing PRs run the complete inventory in serialized groups.
 - **Nightly runs** — the complete test inventory runs on every supported API level. Regular-auth groups run in parallel against the shared ten-user pool; API-level selection spreads regular logins across configured users. Community and Native Login each run after the regular-auth phase because their multi-user coverage also consumes a regular-auth user. Each job builds its own APK because the test configuration is packaged as an asset; the final `test-android` job collects and validates the Firebase results.
 
 ### Test Suites
